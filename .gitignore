@@ -1,0 +1,7 @@
+.idea
+/native
+/cmake-build-*
+/third-party
+*.dylib
+
+.DS_Store
