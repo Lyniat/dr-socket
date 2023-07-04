@@ -4,6 +4,21 @@ project(dr-socket LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 
+if(WIN32)
+    message("Found Windows as OS.")
+    set(META_PLATFORM \"Windows_amd64\")
+elseif(APPLE)
+    if (CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
+        message("Found macOS (Intel) as target OS.")
+        set(META_PLATFORM \"macOS_amd64\")
+    else()
+        message("Found macOS (Apple Silicon) as target OS.")
+        set(META_PLATFORM \"macOS_arm64\")
+    endif()
+else()
+    message(FATAL_ERROR "Unsupported platform.")
+endif()
+
 include_directories(
         ../include
         third-party/enet/include
@@ -75,3 +90,32 @@ ExternalProject_Add(
         INSTALL_COMMAND ""
         CMAKE_ARGS DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
 )
+
+# add some helpful information to library
+# get the latest commit hash of the working branch
+execute_process(
+        COMMAND git log -1 --format=%h
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        OUTPUT_VARIABLE META_GIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# hash
+add_definitions(-DMETA_GIT_HASH="git_hash:${META_GIT_HASH}")
+
+# platform
+add_definitions(-DMETA_PLATFORM=${META_PLATFORM})
+
+# build type
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_definitions(-DMETA_TYPE="type:release")
+else()
+    add_definitions(-DMETA_TYPE="type:debug")
+endif()
+
+# time stamp
+string(TIMESTAMP META_TIMESTAMP)
+add_definitions(-DMETA_TIMESTAMP="time:${META_TIMESTAMP}")
+
+# compiler
+add_definitions(-DMETA_COMPILER="compiler:${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}")
