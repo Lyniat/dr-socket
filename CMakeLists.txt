@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.22)
 
 project(dr-socket LANGUAGES C CXX)
 
@@ -15,6 +15,10 @@ elseif(APPLE)
         message("Found macOS (Apple Silicon) as target OS.")
         set(META_PLATFORM \"macOS_arm64\")
     endif()
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    message("Found Linux as target OS.")
+    set(META_PLATFORM \"Linux_amd64\")
+    set(LINUX TRUE)
 else()
     message(FATAL_ERROR "Unsupported platform.")
 endif()
@@ -61,6 +65,11 @@ set_target_properties(dr-socket
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 
+set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG} -O0")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
+set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+
 if (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64")
@@ -72,9 +81,11 @@ if (APPLE)
     add_custom_command(TARGET dr-socket
             POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dr-socket> ../native/macos/socket.dylib)
-endif()
-
-if (WIN32)
+elseif (LINUX)
+    add_custom_command(TARGET dr-socket
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dr-socket> ../native/linux-amd64/socket.so)
+elseif (WIN32)
     add_custom_command(TARGET dr-socket
             POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dr-socket> ../native/windows-amd64/socket.dll)
