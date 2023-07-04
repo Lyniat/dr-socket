@@ -1,3 +1,7 @@
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
+
 #include <dragonruby.h>
 #include "api.h"
 #include "socket.h"

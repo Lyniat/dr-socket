@@ -5,3 +5,6 @@
 *.dylib
 
 .DS_Store
+
+.vs
+out
