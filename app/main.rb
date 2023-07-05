@@ -12,18 +12,18 @@ def tick args
         args.state.socket_type = :client
     end
 
-    socket_initialize
+    $socket.raw.start
 
     if args.state.socket_type == :server
-            socket_server_create({
+            $socket.raw.server.start({
                 port: 1234,
                 max_clients: 32,
             })
     end
 
     if args.state.socket_type == :client
-        socket_client_create({})
-        socket_client_connect({
+        $socket.raw.client.start({})
+        $socket.raw.client.connect({
             address: "127.0.0.1",
             port: 1234,
         })
@@ -32,8 +32,8 @@ def tick args
   end
 
   if args.state.socket_type == :server
-    socket_server_update
-    data = socket_server_fetch
+    $socket.raw.server.update
+    data = $socket.raw.server.fetch
     if data.size > 0
         puts data
         data.each do |packet|
@@ -50,8 +50,8 @@ def tick args
 
     end
     if args.gtk.quit_requested?
-        socket_server_destroy
-        socket_shutdown
+        $socket.raw.server.end
+        $socket.raw.end
     end
     args.outputs.labels << {
                                  x:                         0,
@@ -68,7 +68,7 @@ def tick args
 
   if args.state.socket_type == :client
     if args.inputs.keyboard.right
-        socket_client_send_to_server(
+        $socket.raw.client.send(
         {
             data: {
                 text: "Client pressed right!",
@@ -94,7 +94,7 @@ def tick args
         }
         )
     end
-    socket_client_send_to_server({
+    $socket.raw.client.send({
         data: {
             x: args.inputs.mouse.x,
             y: args.inputs.mouse.y,
@@ -105,10 +105,10 @@ def tick args
     args.state.position.x = args.inputs.mouse.x
     args.state.position.y = args.inputs.mouse.y
     args.state.pressed = args.inputs.mouse.button_left
-    socket_client_update
+    $socket.raw.client.update
     if args.gtk.quit_requested?
-        socket_client_destroy
-        socket_shutdown
+        $socket.raw.client.end
+        $socket.raw.end
     end
     args.outputs.labels << {
                                  x:                         0,

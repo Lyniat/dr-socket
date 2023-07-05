@@ -8,6 +8,7 @@
 #include "api.h"
 #include "socket.h"
 #include "help.h"
+#include "socket.rb.h"
 
 void ruby_print(mrb_state *state, char *text) {
     drb_api->mrb_funcall(state, mrb_nil_value(), "puts", 1, drb_api->mrb_str_new_cstr(state, text));
@@ -19,8 +20,12 @@ DRB_FFI_EXPORT
 void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api) {
 
     drb_api = api;
+
+    drb_api->mrb_load_string(state, ruby_socket_code);
+
     struct RClass *FFI = drb_api->mrb_module_get(state, "FFI");
-    struct RClass *module = drb_api->mrb_define_module_under(state, FFI, "DRSocket");
+    struct RClass *module = drb_api->mrb_module_get(state, "DRSocket");
+    //struct RClass *module = drb_api->mrb_define_module_under(state, FFI, "DRSocket");
 
     //print debug information first
 #ifdef META_PLATFORM
@@ -53,27 +58,27 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
 #error "Missing -DMETA_COMPILER
 #endif
 
-    drb_api->mrb_define_module_function(state, module, "socket_initialize", {[](mrb_state *mrb, mrb_value self) {
+    drb_api->mrb_define_module_function(state, module, "__socket_initialize", {[](mrb_state *mrb, mrb_value self) {
         socket_init();
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(0));
 
-    drb_api->mrb_define_module_function(state, module, "socket_shutdown", {[](mrb_state *mrb, mrb_value self) {
+    drb_api->mrb_define_module_function(state, module, "__socket_shutdown", {[](mrb_state *mrb, mrb_value self) {
         socket_shutdown();
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(0));
 
-    drb_api->mrb_define_module_function(state, module, "socket_server_destroy", {[](mrb_state *mrb, mrb_value self) {
+    drb_api->mrb_define_module_function(state, module, "__socket_server_destroy", {[](mrb_state *mrb, mrb_value self) {
         socket_server_destroy();
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(0));
 
-    drb_api->mrb_define_module_function(state, module, "socket_client_destroy", {[](mrb_state *mrb, mrb_value self) {
+    drb_api->mrb_define_module_function(state, module, "__socket_client_destroy", {[](mrb_state *mrb, mrb_value self) {
         socket_client_destroy();
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(0));
 
-    drb_api->mrb_define_module_function(state, module, "socket_server_create", {[](mrb_state *mrb, mrb_value self) {
+    drb_api->mrb_define_module_function(state, module, "__socket_server_create", {[](mrb_state *mrb, mrb_value self) {
         mrb_value hash, port, max_clients, num_channels;
         drb_api->mrb_get_args(mrb, "H", &hash);
 
@@ -101,7 +106,7 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(1));
 
-    drb_api->mrb_define_module_function(state, module, "socket_client_create", {[](mrb_state *mrb, mrb_value self) {
+    drb_api->mrb_define_module_function(state, module, "__socket_client_create", {[](mrb_state *mrb, mrb_value self) {
         mrb_value hash, num_channels;
         drb_api->mrb_get_args(mrb, "H", &hash);
 
@@ -114,7 +119,7 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(1));
 
-    drb_api->mrb_define_module_function(state, module, "socket_client_connect", {[](mrb_state *mrb, mrb_value self) {
+    drb_api->mrb_define_module_function(state, module, "__socket_client_connect", {[](mrb_state *mrb, mrb_value self) {
         mrb_value hash, address, port;
         drb_api->mrb_get_args(mrb, "H", &hash);
 
@@ -136,12 +141,12 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(1));
 
-    drb_api->mrb_define_module_function(state, module, "socket_server_update", {[](mrb_state *mrb, mrb_value self) {
+    drb_api->mrb_define_module_function(state, module, "__socket_server_update", {[](mrb_state *mrb, mrb_value self) {
         socket_server_update();
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(0));
 
-    drb_api->mrb_define_module_function(state, module, "socket_server_fetch", {[](mrb_state *mrb, mrb_value self) {
+    drb_api->mrb_define_module_function(state, module, "__socket_server_fetch", {[](mrb_state *mrb, mrb_value self) {
         mrb_value array = drb_api->mrb_ary_new(mrb);
         for (auto &data_buffer: socket_server_received_buffer) {
             int position = 0;
@@ -153,12 +158,12 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
         return array;
     }}, MRB_ARGS_REQ(0));
 
-    drb_api->mrb_define_module_function(state, module, "socket_client_update", {[](mrb_state *mrb, mrb_value self) {
+    drb_api->mrb_define_module_function(state, module, "__socket_client_update", {[](mrb_state *mrb, mrb_value self) {
         socket_client_update();
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(0));
 
-    drb_api->mrb_define_module_function(state, module, "socket_client_send_to_server",
+    drb_api->mrb_define_module_function(state, module, "__socket_client_send_to_server",
                                         {[](mrb_state *mrb, mrb_value self) {
                                             mrb_value hash, data;
                                             drb_api->mrb_get_args(mrb, "H", &hash);

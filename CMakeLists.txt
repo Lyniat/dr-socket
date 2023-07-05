@@ -47,6 +47,7 @@ set(ENGINE_SRC
         native-app/help.h
         native-app/serialize.cpp
         native-app/serialize.h
+        native-app/socket.rb.h
 )
 
 add_library(dr-socket SHARED ${ENGINE_SRC})
