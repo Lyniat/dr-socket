@@ -1,0 +1,11 @@
+site_name: DragonRuby Socket Extension
+theme: readthedocs
+nav:
+  - 'Overview':
+      - 'Get Started': 'overview/get-started.md'
+      - 'Platforms': 'overview/platforms.md'
+      - 'Docs': 'overview/docs.md'
+  - 'API':
+    - 'raw': 'api/raw.md'
+    - 'server': 'api/raw/server.md'
+    - 'client': 'api/raw/client.md'
