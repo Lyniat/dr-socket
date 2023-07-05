@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.22)
 
+# avoid DOWNLOAD_EXTRACT_TIMESTAMP warning in CMake 3.24
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 project(dr-socket LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -8,7 +13,11 @@ if(WIN32)
     message("Found Windows as OS.")
     set(META_PLATFORM \"Windows_amd64\")
 elseif(APPLE)
-    if (CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
+    if(APPLE_IOS)
+        #message("User set iOS as target OS.")
+        message(FATAL_ERROR "iOS is currently not supported but WIP.")
+        set(META_PLATFORM \"iOS_arm64\")
+    elseif (CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
         message("Found macOS (Intel) as target OS.")
         set(META_PLATFORM \"macOS_amd64\")
     else()
@@ -77,7 +86,11 @@ if (WIN32)
 endif()
 
 # copy file to directory
-if (APPLE)
+if (APPLE_IOS)
+    add_custom_command(TARGET dr-socket
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dr-socket> ../native/ios-device/socket.framework/socket)
+elseif (APPLE)
     add_custom_command(TARGET dr-socket
             POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dr-socket> ../native/macos/socket.dylib)
