@@ -1,4 +1,5 @@
 # DragonRuby Socket Extension
+[Docs](https://lyniat.github.io/dr-socket/)
 
 # How-To
 You need [DragonRuby](https://dragonruby.org/toolkit/game) *Indie* or *Pro* to be able to use *C Extensions* and this library.
