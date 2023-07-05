@@ -1,6 +1,0 @@
-devid=lyniat
-devtitle=lyniat
-gameid=dr-socket
-gametitle=dr-socket
-version=1.0
-icon=sprites/icon.png
