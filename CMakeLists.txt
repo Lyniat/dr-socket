@@ -9,6 +9,10 @@ project(dr-socket LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 
+if(MSVC)
+    message(FATAL_ERROR "MSVC is not supported as compiler.")
+endif()
+
 if(WIN32)
     message("Found Windows as OS.")
     set(ENET_BIN_DIR windows-amd64-${CMAKE_BUILD_TYPE})
@@ -57,7 +61,7 @@ endif()
 # helping functions
 if(WIN32)
     # find DR parent directory on Windows
-    set(FIND_DR_COMMAND "cmd" "${CMAKE_CURRENT_SOURCE_DIR}/tools/find-dr.bat")
+    set(FIND_DR_COMMAND "cmd" "/C" "${CMAKE_CURRENT_SOURCE_DIR}/tools/find-dr.bat")
 else()
     # find DR parent directory on Unix
     set(FIND_DR_COMMAND "sh" "${CMAKE_CURRENT_SOURCE_DIR}/tools/find-dr.sh")
@@ -72,6 +76,8 @@ execute_process(COMMAND ${FIND_DR_COMMAND}
 
 # remove new line
 string(REPLACE "\n" "" FIND_DR_COMMAND_OUT ${FIND_DR_COMMAND_OUT})
+# only for windows
+string(REPLACE "\\" "/" FIND_DR_COMMAND_OUT ${FIND_DR_COMMAND_OUT})
 
 if(NOT ${FIND_DR_COMMAND_RESULT} STREQUAL "0")
     message(FATAL_ERROR ${FIND_DR_COMMAND_OUT})
