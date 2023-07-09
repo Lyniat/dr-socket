@@ -11,29 +11,83 @@ set(CMAKE_CXX_STANDARD 11)
 
 if(WIN32)
     message("Found Windows as OS.")
+    set(ENET_BIN_DIR windows-amd64-${CMAKE_BUILD_TYPE})
     set(META_PLATFORM \"Windows_amd64\")
 elseif(APPLE)
     if(APPLE_IOS)
         #message("User set iOS as target OS.")
         message(FATAL_ERROR "iOS is currently not supported but WIP.")
+        set(ENET_BIN_DIR ios-device-${CMAKE_BUILD_TYPE})
         set(META_PLATFORM \"iOS_arm64\")
     elseif (CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
         message("Found macOS (Intel) as target OS.")
+        set(ENET_BIN_DIR macos-${CMAKE_BUILD_TYPE})
         set(META_PLATFORM \"macOS_amd64\")
     else()
         message("Found macOS (Apple Silicon) as target OS.")
+        set(ENET_BIN_DIR macos-${CMAKE_BUILD_TYPE})
         set(META_PLATFORM \"macOS_arm64\")
     endif()
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     message("Found Linux as target OS.")
+    set(ENET_BIN_DIR linux-amd64-${CMAKE_BUILD_TYPE})
     set(META_PLATFORM \"Linux_amd64\")
     set(LINUX TRUE)
+elseif(ANDROID)
+    set(ENET_BIN_DIR android-${ANDROID_ABI}-${CMAKE_BUILD_TYPE})
+    if(${ANDROID_ABI} MATCHES "arm64-v8a")
+        set(ANDROID_TYPE android-arm64)
+    elseif(${ANDROID_ABI} MATCHES "armeabi-v7a")
+        set(ANDROID_TYPE android-arm32)
+    elseif(${ANDROID_ABI} MATCHES "x86_64")
+        set(ANDROID_TYPE android-amd64)
+    elseif(${ANDROID_ABI} MATCHES "x86")
+        set(ANDROID_TYPE android-x86)
+    else()
+        message(FATAL_ERROR "Unsupported Android ABI ${ANDROID_ABI}.")
+    endif()
+    message("User set Android ${ANDROID_TYPE} as target OS.")
+    set(META_PLATFORM \"Android-${ANDROID_TYPE}\")
+    set(CMAKE_C_COMPILER_WORKS 1)
+    set(CMAKE_CXX_COMPILER_WORKS 1)
 else()
     message(FATAL_ERROR "Unsupported platform.")
 endif()
 
+# helping functions
+# find DR parent directory on Unix
+set(FIND_DR_COMMAND
+        [=[
+        dircounter=0
+        while ! [[ -n $(find "$PWD"/ -maxdepth 1 -name "dragonruby") ]] ; do
+        ((dircounter++))
+        if [ "$dircounter" -gt "10" ]; then
+        echo "Could not find any valid DragonRuby super directory. Make sure that this project is somewhere in your DragonRuby directory or any subdirectory of it!"
+        exit 1
+        fi
+        currentdir=${PWD##*/}/${currentdir}
+        cd ..
+        done
+        echo $PWD
+        ]=]
+        )
+
+execute_process(COMMAND bash "-c" "${FIND_DR_COMMAND}"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE FIND_DR_COMMAND_RESULT
+        OUTPUT_VARIABLE FIND_DR_COMMAND_OUT)
+
+# remove new line
+string(REPLACE "\n" "" FIND_DR_COMMAND_OUT ${FIND_DR_COMMAND_OUT})
+
+if(NOT ${FIND_DR_COMMAND_RESULT} STREQUAL "0")
+    message(FATAL_ERROR ${FIND_DR_COMMAND_OUT})
+else()
+    message("Found the DragonRuby directory at ${FIND_DR_COMMAND_OUT}.")
+endif ()
+
 include_directories(
-        ../include
+        ${FIND_DR_COMMAND_OUT}/include
         third-party/enet/include
 )
 
@@ -52,7 +106,7 @@ set(ENGINE_SRC
 
 add_library(dr-socket SHARED ${ENGINE_SRC})
 
-target_link_directories(dr-socket PRIVATE third-party/bin)
+target_link_directories(dr-socket PRIVATE third-party/bin/${ENET_BIN_DIR})
 
 if (WIN32)
 target_link_libraries(dr-socket
@@ -88,21 +142,31 @@ endif()
 
 # copy file to directory
 if (APPLE_IOS)
-    add_custom_command(TARGET dr-socket
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dr-socket> ../native/ios-device/socket.framework/socket)
+    set(DR_TARGET_FILE ../native/ios-device/socket.framework/socket)
 elseif (APPLE)
-    add_custom_command(TARGET dr-socket
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dr-socket> ../native/macos/socket.dylib)
+    set(DR_TARGET_FILE ../native/macos/socket.dylib)
 elseif (LINUX)
-    add_custom_command(TARGET dr-socket
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dr-socket> ../native/linux-amd64/socket.so)
+    set(DR_TARGET_FILE ../native/linux-amd64/socket.so)
 elseif (WIN32)
-    add_custom_command(TARGET dr-socket
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dr-socket> ../native/windows-amd64/socket.dll)
+    set(DR_TARGET_FILE ../native/windows-amd64/socket.dll)
+elseif(ANDROID)
+    set(DR_TARGET_FILE ../native/${ANDROID_TYPE}/socket.so)
+endif()
+
+add_custom_command(TARGET dr-socket
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dr-socket> ${DR_TARGET_FILE}
+        )
+
+set (EXTERNAL_EXTRA_FLAGS "")
+if (ANDROID)
+    set (EXTERNAL_EXTRA_FLAGS
+            -DCMAKE_C_COMPILER_WORKS=${CMAKE_C_COMPILER_WORKS} -DCMAKE_CXX_COMPILER_WORKS=${CMAKE_CXX_COMPILER_WORKS}
+            -DANDROID_ABI=${ANDROID_ABI} \\
+            -DANDROID_PLATFORM=${ANDROID_PLATFORM} \\
+            -DANDROID_NDK=${ANDROID_NDK} \\
+            -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+            )
 endif()
 
 include(ExternalProject)
@@ -110,10 +174,13 @@ ExternalProject_Add(
         enet
         URL http://enet.bespin.org/download/enet-1.3.17.tar.gz
         URL_HASH MD5=c8e96051c5a60afa9f3052d02b2cbe19
-        BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/bin
+        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/download/enet
+        BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/bin/${ENET_BIN_DIR}
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/enet
         INSTALL_COMMAND ""
-        CMAKE_ARGS DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        CMAKE_ARGS -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} \\
+        ${EXTERNAL_EXTRA_FLAGS}
+
 )
 
 # add some helpful information to library
