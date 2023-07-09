@@ -55,9 +55,19 @@ else()
 endif()
 
 # helping functions
-# find DR parent directory on Unix
-set(FIND_DR_COMMAND
-        [=[
+# find DR parent directory on Windows
+#^
+if(WIN32)
+    set(BASH_COMMAND "cmd" "/C")
+    set(FIND_DR_COMMAND
+            "echo to-do"
+            )
+    message(FATAL_ERROR "Windows build will soon be fixed!")
+else()
+    # find DR parent directory on Unix
+    set(BASH_COMMAND bash "-c")
+    set(FIND_DR_COMMAND
+            [=[
         dircounter=0
         while ! [[ -n $(find "$PWD"/ -maxdepth 1 -name "dragonruby") ]] ; do
         ((dircounter++))
@@ -70,15 +80,18 @@ set(FIND_DR_COMMAND
         done
         echo $PWD
         ]=]
-        )
+            )
+endif()
 
-execute_process(COMMAND bash "-c" "${FIND_DR_COMMAND}"
+message(${FIND_DR_COMMAND})
+
+execute_process(COMMAND ${BASH_COMMAND} "${FIND_DR_COMMAND}"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         RESULT_VARIABLE FIND_DR_COMMAND_RESULT
         OUTPUT_VARIABLE FIND_DR_COMMAND_OUT)
 
 # remove new line
-string(REPLACE "\n" "" FIND_DR_COMMAND_OUT ${FIND_DR_COMMAND_OUT})
+#string(REPLACE "\n" "" FIND_DR_COMMAND_OUT ${FIND_DR_COMMAND_OUT})
 
 if(NOT ${FIND_DR_COMMAND_RESULT} STREQUAL "0")
     message(FATAL_ERROR ${FIND_DR_COMMAND_OUT})
