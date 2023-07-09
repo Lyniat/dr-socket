@@ -1,5 +1,5 @@
 set NDK_PATH="%AppData%\..\Local\Android\Sdk\ndk\25.2.9519653"
-set ANDROID_PLATFORM=android-19
+set ANDROID_PLATFORM=android-21
 
 set BUILD_TYPE="Release"
 
