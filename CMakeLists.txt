@@ -59,7 +59,7 @@ else()
 endif()
 
 # helping functions
-if(WIN32)
+if(${CMAKE_HOST_SYSTEM} MATCHES "Windows*") # "WIN32" not working here if cross compiling
     # find DR parent directory on Windows
     set(FIND_DR_COMMAND "cmd" "/C" "${CMAKE_CURRENT_SOURCE_DIR}/tools/find-dr.bat")
 else()

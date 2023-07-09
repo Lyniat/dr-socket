@@ -3,7 +3,7 @@
 NDK_PATH=~/Library/Android/sdk/ndk/25.2.9519653
 ANDROID_PLATFORM=android-19
 
-BUILD_TYPE=Debug
+BUILD_TYPE=Release
 
 if [! -d "$NDK_PATH" ]; then
   echo "NDK_PATH ${NDK_PATH} does not exist. Please change your shell build script."
