@@ -31,6 +31,12 @@ Run ``build-android-debug.sh`` or ``build-android-release.sh``.
 ## iOS
 Run ``build-ios-debug.sh``.
 
+## Raspberry Pi
+WIP
+
+## Oculus Quest
+WIP
+
 # About
 Currently only proof-of-concept but I plan to make this a useful thing 😉
 You can help by joining the official [DragonRuby Discord](https://dragonruby.org/toolkit/game/chat).
