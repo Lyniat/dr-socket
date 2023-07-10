@@ -34,3 +34,7 @@ Support for *iOS* is WIP.
 # About
 Currently only proof-of-concept but I plan to make this a useful thing 😉
 You can help by joining the official [DragonRuby Discord](https://dragonruby.org/toolkit/game/chat).
+
+# License
+- See [LICENSE](LICENSE)
+- App icon by [photo3idea_studio](https://www.flaticon.com/de/kostenlose-icons/smart-plug). This is only for testing. Please change it for your own app/game.

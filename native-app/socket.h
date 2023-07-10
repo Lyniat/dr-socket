@@ -27,7 +27,7 @@ extern socket_server_t socket_server;
 extern socket_client_t socket_client;
 extern std::vector<data_buffer_t> socket_server_received_buffer;
 
-void socket_init();
+void socket_init(mrb_state *state);
 void socket_shutdown();
 void socket_server_create(int port, int max_clients, int num_channels);
 void socket_server_destroy();

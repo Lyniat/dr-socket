@@ -13,16 +13,19 @@ if(MSVC)
     message(FATAL_ERROR "MSVC is not supported as compiler.")
 endif()
 
-if(WIN32)
+if(EMSCRIPTEN)
+    message(FATAL_ERROR "Emscripten is currently not supported and will probably never be. Sorry :(")
+elseif(WIN32)
     message("Found Windows as OS.")
     set(ENET_BIN_DIR windows-amd64-${CMAKE_BUILD_TYPE})
     set(META_PLATFORM \"Windows_amd64\")
 elseif(APPLE)
     if(APPLE_IOS)
-        #message("User set iOS as target OS.")
-        message(FATAL_ERROR "iOS is currently not supported but WIP.")
+        message("User set iOS as target OS.")
         set(ENET_BIN_DIR ios-device-${CMAKE_BUILD_TYPE})
         set(META_PLATFORM \"iOS_arm64\")
+        #set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk")
+        set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk")
     elseif (CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
         message("Found macOS (Intel) as target OS.")
         set(ENET_BIN_DIR macos-${CMAKE_BUILD_TYPE})
@@ -58,6 +61,19 @@ else()
     message(FATAL_ERROR "Unsupported platform.")
 endif()
 
+if(APPLE_IOS)
+    execute_process(COMMAND "sh" "${CMAKE_CURRENT_SOURCE_DIR}/tools/get-ios-info.sh"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            RESULT_VARIABLE IOS_INFO_RESULT
+            OUTPUT_VARIABLE IOS_INFO_OUT)
+endif ()
+
+if(NOT ${IOS_INFO_RESULT} STREQUAL "0")
+    message(FATAL_ERROR ${IOS_INFO_OUT})
+else()
+    message("Found iOS app name: ${IOS_INFO_OUT}.")
+endif ()
+
 # helping functions
 if(${CMAKE_HOST_SYSTEM} MATCHES "Windows*") # "WIN32" not working here if cross compiling
     # find DR parent directory on Windows
@@ -91,6 +107,7 @@ include_directories(
 )
 
 set(ENGINE_SRC
+        native-app/ext.h
         native-app/ext.cpp
         native-app/api.h
         native-app/api.cpp
@@ -101,6 +118,7 @@ set(ENGINE_SRC
         native-app/serialize.cpp
         native-app/serialize.h
         native-app/socket.rb.h
+        native-app/ios.h
 )
 
 add_library(dr-socket SHARED ${ENGINE_SRC})
@@ -133,7 +151,22 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
 set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
-if (WIN32)
+if(APPLE_IOS)
+    # use -arch arm64 for a real device
+    set(IOS_EXTRA_FLAGS
+            "-arch x86_64 \
+            -install_name @rpath/socket.framework/socket \
+            -fembed-bitcode -dead_strip -fobjc-arc -fobjc-link-runtime \
+            -mios-simulator-version-min=10.3 -licucore -stdlib=libc++ \
+            -framework CFNetwork -framework UIKit -framework Foundation"
+            )
+    set(IOS_EXTRA_LINKER_FLAGS
+            "-rpath @loader_path/Frameworks -rpath -fobjc-arc -fobjc-link-runtime"
+            )
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${IOS_EXTRA_FLAGS} -ObjC++")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${IOS_EXTRA_FLAGS} -ObjC")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${IOS_EXTRA_LINKER_FLAGS}")
+elseif (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64")
     set(CMAKE_SHARED_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
@@ -142,6 +175,14 @@ endif()
 # copy file to directory
 if (APPLE_IOS)
     set(DR_TARGET_FILE ../native/ios-device/socket.framework/socket)
+    add_custom_command(TARGET dr-socket
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/tools/Info.plist ${CMAKE_CURRENT_SOURCE_DIR}/native/ios-device/Info.plist
+            )
+    add_custom_command(TARGET dr-socket
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/tools/Info.plist ${CMAKE_CURRENT_SOURCE_DIR}/native/ios-device/socket.framework/Info.plist
+            )
 elseif (APPLE)
     set(DR_TARGET_FILE ../native/macos/socket.dylib)
 elseif (LINUX)
@@ -165,6 +206,12 @@ if (ANDROID)
             -DANDROID_PLATFORM=${ANDROID_PLATFORM} \\
             -DANDROID_NDK=${ANDROID_NDK} \\
             -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+            )
+elseif(APPLE_IOS)
+    set (EXTERNAL_EXTRA_FLAGS
+        -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
+        -DCMAKE_CXX_FLAGS=${IOS_EXTRA_FLAGS}
+        -DCMAKE_C_FLAGS=${IOS_EXTRA_FLAGS}
             )
 endif()
 

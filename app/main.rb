@@ -1,8 +1,38 @@
-$gtk.ffi_misc.gtk_dlopen("socket")
-include FFI::DRSocket
+#$gtk.ffi_misc.gtk_dlopen("socket")
+#include FFI::DRSocket
+
+class IOSWizard < Wizard
+  def before_create_payload
+    puts "* INFO - before_create_payload"
+    puts "#{app_path}"
+
+    # stage extension
+    sh "cp ./dr-socket/native/ios-device/Info.plist ./dr-socket/native/ios-device/socket.framework/Info.plist"
+    sh "mkdir -p \"#{app_path}/Frameworks/socket.framework/\""
+    sh "cp -r \"#{root_folder}/native/ios-device/socket.framework/\" \"#{app_path}/Frameworks/socket.framework/\""
+
+    # sign
+    sh <<-S
+    CODESIGN_ALLOCATE=#{codesign_allocate_path} #{codesign_path} \\
+                                                -f -s \"#{certificate_name}\" \\
+                                                \"#{app_path}/Frameworks/socket.framework/socket\"
+    S
+   end
+end
 
 def tick args
-  if args.state.tick_count == 0
+  if args.state.tick_count == 180
+    if args.gtk.platform?(:ios)
+      args.gtk.dlopen "socket"
+      include FFI::DRSocket
+      $gtk.console.show
+      $socket.raw.start
+      $socket.raw.server.start({
+                      port: 1234,
+                      max_clients: 32,
+                  })
+    end
+    return
     argv = args.gtk.argv
     if argv.include?("server")
         puts "Starting application as server."
@@ -30,6 +60,8 @@ def tick args
     end
 
   end
+
+  return
 
   if args.state.socket_type == :server
     $socket.raw.server.update

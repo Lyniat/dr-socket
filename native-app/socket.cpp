@@ -1,4 +1,5 @@
 #include "socket.h"
+#include "ext.h"
 #include <cstdio>
 #include <cstring>
 
@@ -6,12 +7,12 @@ socket_server_t socket_server;
 socket_client_t socket_client;
 std::vector<data_buffer_t> socket_server_received_buffer;
 
-void socket_init(){
+void socket_init(mrb_state *state){
     if (enet_initialize() != 0)
     {
-        fprintf (stderr, "An error occurred while initializing ENet.\n");
+        ruby_print(state, "An error occurred while initializing ENet.\n");
     }else{
-        fprintf (stdout, "ENet was successfully initialized.\n");
+        ruby_print(state, "ENet was successfully initialized.\n");
     }
 }
 

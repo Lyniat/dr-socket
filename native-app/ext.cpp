@@ -5,6 +5,7 @@
 #endif
 
 #include <dragonruby.h>
+#include "ios.h"
 #include "api.h"
 #include "socket.h"
 #include "help.h"
@@ -59,7 +60,7 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
 #endif
 
     drb_api->mrb_define_module_function(state, module, "__socket_initialize", {[](mrb_state *mrb, mrb_value self) {
-        socket_init();
+        socket_init(mrb);
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(0));
 
