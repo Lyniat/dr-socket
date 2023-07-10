@@ -15,6 +15,11 @@ endif()
 
 if(EMSCRIPTEN)
     message(FATAL_ERROR "Emscripten is currently not supported and will probably never be. Sorry :(")
+elseif(RASPBERRY_PI)
+    message(FATAL_ERROR "Raspberry Pi is currently not supported.")
+    #message("User set Raspberry Pi as target OS.")
+    set(ENET_BIN_DIR linux-raspberrypi-${CMAKE_BUILD_TYPE})
+    set(META_PLATFORM \"linux-raspberrypi\")
 elseif(WIN32)
     message("Found Windows as OS.")
     set(ENET_BIN_DIR windows-amd64-${CMAKE_BUILD_TYPE})
@@ -66,12 +71,12 @@ if(APPLE_IOS)
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             RESULT_VARIABLE IOS_INFO_RESULT
             OUTPUT_VARIABLE IOS_INFO_OUT)
-endif ()
 
-if(NOT ${IOS_INFO_RESULT} STREQUAL "0")
-    message(FATAL_ERROR ${IOS_INFO_OUT})
-else()
-    message("Found iOS app name: ${IOS_INFO_OUT}.")
+    if(NOT ${IOS_INFO_RESULT} STREQUAL "0")
+        message(FATAL_ERROR ${IOS_INFO_OUT})
+    else()
+        message("Found iOS app name: ${IOS_INFO_OUT}.")
+    endif ()
 endif ()
 
 # helping functions
