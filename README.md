@@ -28,8 +28,8 @@ Run ``build-android-debug.bat`` or ``build-android-release.bat``.
 ### macOS / Linux
 Run ``build-android-debug.sh`` or ``build-android-release.sh``.
 
-## Other
-Support for *iOS* is WIP.
+## iOS
+Run ``build-ios-debug.sh``.
 
 # About
 Currently only proof-of-concept but I plan to make this a useful thing 😉
