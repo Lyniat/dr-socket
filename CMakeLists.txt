@@ -223,8 +223,8 @@ endif()
 include(ExternalProject)
 ExternalProject_Add(
         enet
-        URL http://enet.bespin.org/download/enet-1.3.17.tar.gz
-        URL_HASH MD5=c8e96051c5a60afa9f3052d02b2cbe19
+        URL https://github.com/lsalzman/enet/archive/refs/tags/v1.3.17.tar.gz
+        URL_HASH MD5=1c3270f1e03ccb2a8544a88d91d2a368
         DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/download/enet
         BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/bin/${ENET_BIN_DIR}
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/enet
