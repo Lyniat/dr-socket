@@ -1,6 +1,3 @@
-#$gtk.ffi_misc.gtk_dlopen("socket")
-#include FFI::DRSocket
-
 class IOSWizard < Wizard
   def before_create_payload
     puts "* INFO - before_create_payload"
@@ -21,6 +18,13 @@ class IOSWizard < Wizard
 end
 
 def tick args
+    if args.state.tick_count == 0
+        if !args.gtk.platform?(:ios)
+            $gtk.ffi_misc.gtk_dlopen("socket")
+            include FFI::DRSocket
+            $gtk.console.show
+        end
+    end
   if args.state.tick_count == 180
     if args.gtk.platform?(:ios)
       args.gtk.dlopen "socket"
@@ -170,4 +174,3 @@ def tick args
 
   # puts args.gtk.quit_requested?
 end
-
