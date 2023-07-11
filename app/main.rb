@@ -23,6 +23,11 @@ def tick args
             $gtk.ffi_misc.gtk_dlopen("socket")
             include FFI::DRSocket
             $gtk.console.show
+            $socket.raw.start
+            $socket.raw.server.start({
+                      port: 1234,
+                      max_clients: 32,
+                  })
         end
     end
   if args.state.tick_count == 180
@@ -174,3 +179,4 @@ def tick args
 
   # puts args.gtk.quit_requested?
 end
+
