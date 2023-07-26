@@ -1,3 +1,5 @@
+# CMake file based on https://github.com/Lyniat/dr-cmake-template
+
 cmake_minimum_required(VERSION 3.22)
 
 # avoid DOWNLOAD_EXTRACT_TIMESTAMP warning in CMake 3.24
@@ -5,8 +7,11 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
 endif()
 
-project(dr-socket LANGUAGES C CXX)
+set(THIS_PROJECT_NAME "dr-socket")
 
+project(${THIS_PROJECT_NAME} LANGUAGES C CXX)
+
+set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 11)
 
 if(MSVC)
@@ -18,35 +23,35 @@ if(EMSCRIPTEN)
 elseif(RASPBERRY_PI)
     message(FATAL_ERROR "Raspberry Pi is currently not supported.")
     #message("User set Raspberry Pi as target OS.")
-    set(ENET_BIN_DIR linux-raspberrypi-${CMAKE_BUILD_TYPE})
+    set(THIRD_PARTY_BIN_DIR linux-raspberrypi-${CMAKE_BUILD_TYPE})
     set(META_PLATFORM \"linux-raspberrypi\")
 elseif(WIN32)
     message("Found Windows as OS.")
-    set(ENET_BIN_DIR windows-amd64-${CMAKE_BUILD_TYPE})
+    set(THIRD_PARTY_BIN_DIR windows-amd64-${CMAKE_BUILD_TYPE})
     set(META_PLATFORM \"Windows_amd64\")
 elseif(APPLE)
     if(APPLE_IOS)
         message("User set iOS as target OS.")
-        set(ENET_BIN_DIR ios-device-${CMAKE_BUILD_TYPE})
+        set(THIRD_PARTY_BIN_DIR ios-device-${CMAKE_BUILD_TYPE})
         set(META_PLATFORM \"iOS_arm64\")
         #set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk")
         set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk")
     elseif (CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
         message("Found macOS (Intel) as target OS.")
-        set(ENET_BIN_DIR macos-x86_64-${CMAKE_BUILD_TYPE})
+        set(THIRD_PARTY_BIN_DIR macos-x86_64-${CMAKE_BUILD_TYPE})
         set(META_PLATFORM \"macOS_amd64\")
     else()
         message("Found macOS (Apple Silicon) as target OS.")
-        set(ENET_BIN_DIR macos-arm64-${CMAKE_BUILD_TYPE})
+        set(THIRD_PARTY_BIN_DIR macos-arm64-${CMAKE_BUILD_TYPE})
         set(META_PLATFORM \"macOS_arm64\")
     endif()
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     message("Found Linux as target OS.")
-    set(ENET_BIN_DIR linux-amd64-${CMAKE_BUILD_TYPE})
+    set(THIRD_PARTY_BIN_DIR linux-amd64-${CMAKE_BUILD_TYPE})
     set(META_PLATFORM \"Linux_amd64\")
     set(LINUX TRUE)
 elseif(ANDROID)
-    set(ENET_BIN_DIR android-${ANDROID_ABI}-${CMAKE_BUILD_TYPE})
+    set(THIRD_PARTY_BIN_DIR android-${ANDROID_ABI}-${CMAKE_BUILD_TYPE})
     if(${ANDROID_ABI} MATCHES "arm64-v8a")
         set(ANDROID_TYPE android-arm64)
     elseif(${ANDROID_ABI} MATCHES "armeabi-v7a")
@@ -108,43 +113,30 @@ endif ()
 
 include_directories(
         ${FIND_DR_COMMAND_OUT}/include
-        third-party/enet/include
+        third-party/source/enet/include
 )
 
-set(ENGINE_SRC
-        native-app/ext.h
-        native-app/ext.cpp
-        native-app/api.h
-        native-app/api.cpp
-        native-app/socket.cpp
-        native-app/socket.h
-        native-app/help.cpp
-        native-app/help.h
-        native-app/serialize.cpp
-        native-app/serialize.h
-        native-app/socket.rb.h
-        native-app/ios.h
-)
+file(GLOB_RECURSE LIB_SRC "native-app/*.c" "native-app/*.cpp" "native-app/*.h" "native-app/*.hpp")
 
-add_library(dr-socket SHARED ${ENGINE_SRC})
+add_library(${THIS_PROJECT_NAME} SHARED ${LIB_SRC})
 
-target_link_directories(dr-socket PRIVATE third-party/bin/${ENET_BIN_DIR})
+target_link_directories(${THIS_PROJECT_NAME} PRIVATE third-party/bin/${THIRD_PARTY_BIN_DIR}/enet)
 
 if (WIN32)
-target_link_libraries(dr-socket
+target_link_libraries(${THIS_PROJECT_NAME}
         PRIVATE
         enet
         ws2_32
         winmm
         )
 else()
-target_link_libraries(dr-socket
+target_link_libraries(${THIS_PROJECT_NAME}
         PRIVATE
         enet
         )
 endif()
 
-set_target_properties(dr-socket
+set_target_properties(${THIS_PROJECT_NAME}
         PROPERTIES PREFIX ""
         OUTPUT_NAME "socket"
         )
@@ -180,11 +172,11 @@ endif()
 # copy file to directory
 if (APPLE_IOS)
     set(DR_TARGET_FILE ../native/ios-device/socket.framework/socket)
-    add_custom_command(TARGET dr-socket
+    add_custom_command(TARGET ${THIS_PROJECT_NAME}
             POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/tools/Info.plist ${CMAKE_CURRENT_SOURCE_DIR}/native/ios-device/Info.plist
             )
-    add_custom_command(TARGET dr-socket
+    add_custom_command(TARGET ${THIS_PROJECT_NAME}
             POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/tools/Info.plist ${CMAKE_CURRENT_SOURCE_DIR}/native/ios-device/socket.framework/Info.plist
             )
@@ -198,9 +190,9 @@ elseif(ANDROID)
     set(DR_TARGET_FILE ../native/${ANDROID_TYPE}/socket.so)
 endif()
 
-add_custom_command(TARGET dr-socket
+add_custom_command(TARGET ${THIS_PROJECT_NAME}
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dr-socket> ${DR_TARGET_FILE}
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${THIS_PROJECT_NAME}> ${DR_TARGET_FILE}
         )
 
 set (EXTERNAL_EXTRA_FLAGS "")
@@ -228,10 +220,10 @@ ExternalProject_Add(
         URL https://github.com/lsalzman/enet/archive/refs/tags/v1.3.17.tar.gz
         URL_HASH MD5=1c3270f1e03ccb2a8544a88d91d2a368
         DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/download/enet
-        BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/bin/${ENET_BIN_DIR}
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/enet
+        BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/bin/${THIRD_PARTY_BIN_DIR}/enet
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/source/enet
         INSTALL_COMMAND ""
-        CMAKE_ARGS -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} \\
+        CMAKE_ARGS -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         ${EXTERNAL_EXTRA_FLAGS}
 
 )
@@ -239,7 +231,7 @@ ExternalProject_Add(
 # add some helpful information to library
 # get the latest commit hash of the working branch
 execute_process(
-        COMMAND git log -1 --format=%h
+        COMMAND git log -1 --format=%H
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
         OUTPUT_VARIABLE META_GIT_HASH
         OUTPUT_STRIP_TRAILING_WHITESPACE
