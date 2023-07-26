@@ -33,6 +33,10 @@ const char* cext_hash_get_string(mrb_state *mrb, mrb_value hash, const char* key
     return cext_to_string(mrb, drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key)));
 }
 
+mrb_sym cext_hash_get_sym(mrb_state *mrb, mrb_value hash, const char* key){
+    return drb_api->mrb_obj_to_sym(mrb, cext_hash_get(mrb, hash, key));
+}
+
 mrb_value cext_hash_get_save_hash(mrb_state *mrb, mrb_value hash, const char* key){
     auto h = cext_hash_get(mrb, hash, key);
     if((cext_is_hash(mrb, h))){
@@ -87,6 +91,14 @@ const char* cext_hash_get_string_default(mrb_state *mrb, mrb_value hash, const c
     auto value = drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key));
     if(cext_is_string(mrb, value)){
         return cext_to_string(mrb, value);
+    }
+    return def;
+}
+
+mrb_sym cext_hash_get_sym_default(mrb_state *mrb, mrb_value hash, const char* key, mrb_sym def){
+    auto value = drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key));
+    if(cext_is_symbol(mrb, value)){
+        return drb_api->mrb_obj_to_sym(mrb, value);
     }
     return def;
 }

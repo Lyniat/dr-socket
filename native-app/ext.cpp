@@ -7,18 +7,16 @@
 #include <dragonruby.h>
 #include "ios.h"
 #include "api.h"
-#include "socket.h"
-#include "help.h"
-#include "socket.rb.h"
 #include "enet.h"
+#include "socket.rb.h"
 
 void ruby_print(mrb_state *state, char *text) {
     drb_api->mrb_funcall(state, mrb_nil_value(), "puts", 1, drb_api->mrb_str_new_cstr(state, text));
 }
 
 void ruby_print_error(mrb_state *state, char *text) {
-    ruby_print(state, text);
-    drb_api->mrb_funcall(state, mrb_nil_value(), "$gtk.console.show", 0);
+    // drb_api->mrb_funcall(state, drb_api->mrb_class_path(state, drb_console), "log_error", 1, drb_api->mrb_str_new_cstr(state, text));
+    drb_api->mrb_funcall(state, mrb_nil_value(), "raise", 1, drb_api->mrb_str_new_cstr(state, text));
 }
 
 DRB_FFI
@@ -28,11 +26,11 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
 
     drb_api = api;
 
-    drb_api->mrb_load_string(state, ruby_socket_code);
+    drb_gtk = drb_api->mrb_module_get(state, "GTK");
+    drb_runtime = drb_api->mrb_class_get_under(state, drb_gtk, "Runtime");
+    drb_console = drb_api->mrb_class_get_under(state, drb_gtk, "Console");
 
-    struct RClass *FFI = drb_api->mrb_module_get(state, "FFI");
-    struct RClass *module = drb_api->mrb_module_get(state, "DRSocket");
-    //struct RClass *module = drb_api->mrb_define_module_under(state, FFI, "DRSocket");
+    drb_api->mrb_load_string(state, ruby_socket_code);
 
     //print debug information first
 #ifdef META_PLATFORM
@@ -65,7 +63,10 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
 #error "Missing -DMETA_COMPILER
 #endif
 
-    // register_socket_symbols(state); TODO: add this again
+    register_socket_symbols(state);
+    socket_open_enet(state);
+
+    /*
 
     drb_api->mrb_define_module_function(state, module, "__socket_initialize", {[](mrb_state *mrb, mrb_value self) {
         socket_init(mrb);
@@ -190,5 +191,13 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
 
                                             return mrb_nil_value();
                                         }}, MRB_ARGS_REQ(1));
+                                        */
 }
 }
+
+// only for debugging purpose in CLion. Just ignore this
+#ifdef __JETBRAINS_IDE__
+int main(int argc, char* argv[]) {
+    drb_register_c_extensions_with_api(nullptr, nullptr);
+}
+#endif

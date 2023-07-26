@@ -116,9 +116,24 @@ include_directories(
         third-party/source/enet/include
 )
 
-file(GLOB_RECURSE LIB_SRC "native-app/*.c" "native-app/*.cpp" "native-app/*.h" "native-app/*.hpp")
-
-add_library(${THIS_PROJECT_NAME} SHARED ${LIB_SRC})
+add_library(${THIS_PROJECT_NAME} SHARED
+        native-app/api.h
+        native-app/api.cpp
+        native-app/enet.h
+        native-app/enet.cpp
+        native-app/ext.h
+        native-app/ext.cpp
+        native-app/help.h
+        native-app/help.cpp
+        native-app/ios.h
+        native-app/lua.h
+        native-app/lua.cpp
+        native-app/serialize.h
+        native-app/serialize.cpp
+        native-app/socket.h
+        native-app/socket.cpp
+        native-app/socket.rb.h
+        )
 
 target_link_directories(${THIS_PROJECT_NAME} PRIVATE third-party/bin/${THIRD_PARTY_BIN_DIR}/enet)
 
@@ -229,7 +244,7 @@ ExternalProject_Add(
 )
 
 # add some helpful information to library
-# get the latest commit hash of the working branch
+# get the latest commit hash of the working branch git branch
 execute_process(
         COMMAND git log -1 --format=%H
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
@@ -237,8 +252,17 @@ execute_process(
         OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-# hash
-add_definitions(-DMETA_GIT_HASH="git_hash:${META_GIT_HASH}")
+# get git branch name
+execute_process(
+        COMMAND git branch --show-current
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        OUTPUT_VARIABLE META_GIT_BRANCH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# branch and hash
+# add_definitions(-DMETA_GIT="git_hash:${META_GIT_HASH}")
+add_definitions(-DMETA_GIT_HASH="git:${META_GIT_BRANCH} ${META_GIT_HASH}")
 
 # platform
 add_definitions(-DMETA_PLATFORM=${META_PLATFORM})
@@ -248,6 +272,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_definitions(-DMETA_TYPE="type:release")
 else()
     add_definitions(-DMETA_TYPE="type:debug")
+    add_definitions(-DDEBUG)
 endif()
 
 # time stamp

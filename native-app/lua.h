@@ -2,17 +2,15 @@
 #define lua_State mrb_state
 #endif
 
-#ifndef LUA_API
-#define LUA_API static
-#endif
+// "\e]8;;file://" PATH "\e\\" FILE "\e]8;;\a"
+#define DEBUG_FILENAME (char*)__FILE_NAME__ ":" STRINGIFY(__LINE__)
 
-#ifndef LUALIB_API
-#define LUALIB_API LUA_API
+#ifndef luaL_error
+#ifdef DEBUG
+#define luaL_error(state, fmt, ...) printf_error(state, "%s " fmt, DEBUG_FILENAME, ##__VA_ARGS__)
+#else
+#define luaL_error(state, fmt, ...) printf_error(state, fmt, ##__VA_ARGS__)
 #endif
-
-// https://www.lua.org/source/5.3/luaconf.h.html
-#ifndef LUA_IDSIZE
-#define LUA_IDSIZE 60
 #endif
 
 #ifndef DR_SOCKET_LUA_H
@@ -21,13 +19,13 @@
 #include <dragonruby.h>
 
 // https://www.lua.org/source/5.4/lauxlib.c.html#luaL_where
-LUALIB_API void luaL_where (lua_State *L, int level);
+void luaL_where (lua_State *L, int level);
 
 /*
 ** Again, the use of 'lua_pushvfstring' ensures this function does
 ** not need reserved stack space when called. (At worst, it generates
 ** an error with "stack overflow" instead of the given message.)
 */
-LUALIB_API mrb_value luaL_error (lua_State *L, const char *fmt, ...);
+mrb_value printf_error (mrb_state *state, const char *fmt, ...);
 
 #endif
