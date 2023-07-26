@@ -25,6 +25,22 @@ mrb_value cext_hash_get(mrb_state *mrb, mrb_value hash, const char* key){
     return drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key));
 }
 
+mrb_int cext_hash_get_int(mrb_state *mrb, mrb_value hash, const char* key){
+    return cext_to_int(mrb, drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key)));
+}
+
+const char* cext_hash_get_string(mrb_state *mrb, mrb_value hash, const char* key){
+    return cext_to_string(mrb, drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key)));
+}
+
+mrb_value cext_hash_get_save_hash(mrb_state *mrb, mrb_value hash, const char* key){
+    auto h = cext_hash_get(mrb, hash, key);
+    if((cext_is_hash(mrb, h))){
+        return h;
+    }
+    return drb_api->mrb_hash_new(mrb);
+}
+
 void cext_hash_set(mrb_state *mrb, mrb_value hash, const char* key, mrb_value val){
     drb_api->mrb_hash_set(mrb, hash, cext_key(mrb, key), val);
 }
@@ -57,4 +73,20 @@ bool cext_is_valid_type(mrb_state *mrb, mrb_value value){
     mrb_vtype type = mrb_type(value);
     return (type == MRB_TT_STRING || type == MRB_TT_INTEGER || type == MRB_TT_HASH || type == MRB_TT_ARRAY ||
     type == MRB_TT_FLOAT || type == MRB_TT_SYMBOL);
+}
+
+mrb_int cext_hash_get_int_default(mrb_state *mrb, mrb_value hash, const char* key, mrb_int def){
+    auto value = drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key));
+    if(cext_is_int(mrb, value)){
+        return cext_to_int(mrb, value);
+    }
+    return def;
+}
+
+const char* cext_hash_get_string_default(mrb_state *mrb, mrb_value hash, const char* key, const char* def){
+    auto value = drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key));
+    if(cext_is_string(mrb, value)){
+        return cext_to_string(mrb, value);
+    }
+    return def;
 }

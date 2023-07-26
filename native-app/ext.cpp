@@ -10,9 +10,15 @@
 #include "socket.h"
 #include "help.h"
 #include "socket.rb.h"
+#include "enet.h"
 
 void ruby_print(mrb_state *state, char *text) {
     drb_api->mrb_funcall(state, mrb_nil_value(), "puts", 1, drb_api->mrb_str_new_cstr(state, text));
+}
+
+void ruby_print_error(mrb_state *state, char *text) {
+    ruby_print(state, text);
+    drb_api->mrb_funcall(state, mrb_nil_value(), "$gtk.console.show", 0);
 }
 
 DRB_FFI
@@ -58,6 +64,8 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
 #else
 #error "Missing -DMETA_COMPILER
 #endif
+
+    // register_socket_symbols(state); TODO: add this again
 
     drb_api->mrb_define_module_function(state, module, "__socket_initialize", {[](mrb_state *mrb, mrb_value self) {
         socket_init(mrb);
