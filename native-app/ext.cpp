@@ -11,11 +11,11 @@
 #include "enet.h"
 #include "socket.rb.h"
 
-void ruby_print(mrb_state *state, char *text) {
+void ruby_print(mrb_state *state, const char *text) {
     drb_api->mrb_funcall(state, mrb_nil_value(), "puts", 1, drb_api->mrb_str_new_cstr(state, text));
 }
 
-void ruby_print_error(mrb_state *state, char *text) {
+void ruby_print_error(mrb_state *state, const char *text) {
     // drb_api->mrb_funcall(state, drb_api->mrb_class_path(state, drb_console), "log_error", 1, drb_api->mrb_str_new_cstr(state, text));
     drb_api->mrb_funcall(state, mrb_nil_value(), "raise", 1, drb_api->mrb_str_new_cstr(state, text));
 }

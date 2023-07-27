@@ -17,6 +17,18 @@ module DRSocket::Raw
 end
 
 $socket = DRSocket
+
+module GTK
+class Runtime
+    old_sdl_tick = instance_method(:__sdl_tick__)
+
+    define_method(:__sdl_tick__) do |args|
+        old_sdl_tick.bind(self).(args)
+
+        __free_cycle_memory
+    end
+  end
+end
 )";
 
 #endif

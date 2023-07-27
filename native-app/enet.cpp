@@ -1030,4 +1030,9 @@ void socket_open_enet(mrb_state* state) {
 #endif
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(0));
+
+    drb_api->mrb_define_module_function(state, module_socket, "__free_cycle_memory", {[](mrb_state *mrb, mrb_value self) {
+        FREE_CYCLE
+        return mrb_nil_value();
+    }}, MRB_ARGS_REQ(0));
 }

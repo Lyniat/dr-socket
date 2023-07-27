@@ -13,11 +13,11 @@ end
 def update_server args
     event = $socket.raw.host_service(100)
     while event
-        puts event.type
+        puts event
         if event.type == :s_event_receive
           # print("Got message: ", event.data, event.peer)
           puts("Got message: #{event.data}.")
-          # event.peer:send( "pong" ) TODO:
+          $socket.raw.peer_send(event.peer, {data: {message: "pong"}})
         elsif event.type == :s_event_connect
           # print(event.peer, "connected.")
           puts("connected.")
@@ -37,12 +37,12 @@ event = $socket.raw.host_service(100)
         if event.type == :s_event_receive
           # print("Got message: ", event.data, event.peer)
           puts("Got message: #{event.data}.")
-          # event.peer:send( "ping" ) TODO:
+          $socket.raw.peer_send(event.peer, {data: {message: "ping"}})
         elsif event.type == :s_event_connect
           # print(event.peer, "connected.")
           puts("connected.")
           # event.peer:send( "ping" ) TODO:
-          $socket.raw.peer_send(event.peer, {data: "ping"})
+          $socket.raw.peer_send(event.peer, {data: {message: "ping"}})
         elsif event.type == :s_event_disconnect
           # print(event.peer, "disconnected.")
           puts("disconnected.")
@@ -71,6 +71,6 @@ def tick args
     else
         update_client args
     end
-    $socket.check_allocated_memory
+    # $socket.check_allocated_memory
 end
 
