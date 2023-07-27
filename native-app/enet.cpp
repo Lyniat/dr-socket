@@ -953,12 +953,7 @@ mrb_value peer_send(lua_State *l, mrb_value self) {
 void socket_open_enet(mrb_state* state) {
     struct RClass *FFI = API->mrb_module_get(state, "FFI");
     struct RClass *module_socket = API->mrb_module_get_under(state, FFI, "DRSocket");
-    // struct RClass *module = API->mrb_module_get_under(state, module_socket, "Raw");
     struct RClass *module = API->mrb_module_get_under(state, module_socket, "Raw");
-    // struct RClass *module = API->mrb_class_get_under(state, module_raw, "Raw");
-
-    //struct RClass *module_socket = API->mrb_define_module_under(state, FFI, "DRSocket");
-    //struct RClass *module = API->mrb_define_module_under(state, module_socket, "Raw");
 
     enet_initialize();
     //atexit(enet_deinitialize); TODO: use this

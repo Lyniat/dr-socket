@@ -20,7 +20,6 @@ namespace lyniat::socket::serialize {
 
         if (type == MRB_TT_STRING) {
             const char *string = cext_to_string(mrb, data);
-            //printf("%s\n", string);
             size_t str_len = strlen(string);
             const char *string_dup = strdup(string);
             serialized_data_t serialized_string = {.type = MRB_TT_STRING, .data = (void *) string_dup, .size = (int) (
@@ -46,7 +45,6 @@ namespace lyniat::socket::serialize {
 
         if (type == MRB_TT_SYMBOL) {
             const char *string = API->mrb_sym_name(mrb, API->mrb_obj_to_sym(mrb, data));
-            //printf("%s\n", string);
             size_t str_len = strlen(string);
             const char *string_dup = strdup(string);
             serialized_data_t serialized_string = {.type = MRB_TT_SYMBOL, .data = (void *) string_dup, .size = (int) (
@@ -65,8 +63,6 @@ namespace lyniat::socket::serialize {
                 mrb_value content = API->mrb_hash_get(mrb, data, key);
                 serialized_data_t serialized_data = serialize_data(mrb, content);
                 serialized_hash_t serialized_hash_entry = {.key = s_key, .data = serialized_data};
-                printf("key: %s\n", s_key);
-                //data_size += serialized_hash.size;
                 hash_size++;
                 data_size += serialized_data.size;
                 data_vector.push_back(serialized_hash_entry);
@@ -187,7 +183,6 @@ namespace lyniat::socket::serialize {
     int serialize_data_to_buffer(char *buffer, int size, int position, serialized_data_t data) {
         char c_type = data.type;
         if (data.type == MRB_TT_STRING || data.type == MRB_TT_SYMBOL) {
-            printf("%s\n", (char *) data.data);
             buffer[position] = c_type;
             ++position;
             memcpy(buffer + position, (void *) &data.size, sizeof(int));
@@ -196,7 +191,6 @@ namespace lyniat::socket::serialize {
             position += data.size;
         }
         if (data.type == MRB_TT_INTEGER) {
-            printf("%lld\n", *(mrb_int *) data.data);
             buffer[position] = c_type;
             ++position;
             memcpy(buffer + position, data.data, sizeof(mrb_int));
@@ -204,40 +198,28 @@ namespace lyniat::socket::serialize {
         }
         if (data.type == MRB_TT_FALSE || data.type == MRB_TT_TRUE) {
             if (data.type == MRB_TT_TRUE) {
-                printf("True\n");
             } else {
-                printf("False\n");
             }
             buffer[position] = c_type;
             ++position;
         }
         if (data.type == MRB_TT_FLOAT) {
-            printf("%f\n", *((mrb_float *) data.data));
             buffer[position] = c_type;
             ++position;
             memcpy(buffer + position, data.data, sizeof(mrb_float));
             position += sizeof(mrb_float);
         }
         if (data.type == MRB_TT_HASH) {
-            printf("hash: ");
-            serialized_data_t serialized_data = *((serialized_data_t *) data.data);
-            //int type = hash_data.type;
-            //printf("type: %i\n", type);
-            //deserialize_data(hash_data);
-            int data_size = data.size;
-            printf("amount: %i\n", data.amount);
-            printf("size: %i\n", data.size);
             buffer[position] = c_type;
             ++position;
             memcpy(buffer + position, (void *) &data.size, sizeof(int));
             position += sizeof(int);
             memcpy(buffer + position, (void *) &data.amount, sizeof(int));
             position += sizeof(int);
-            serialized_hash_t *hash_entries = (serialized_hash_t *) data.data;
+            auto *hash_entries = (serialized_hash_t *) data.data;
             for (int i = 0; i < data.amount; ++i) {
                 serialized_hash_t hash_entry = hash_entries[i];
                 const char *key = hash_entry.key;
-                printf("key: %s\n", key);
 
                 //key
                 int key_len = (int) strlen(key) + 1;
@@ -249,21 +231,13 @@ namespace lyniat::socket::serialize {
             }
         }
         if (data.type == MRB_TT_ARRAY) {
-            printf("array: ");
-            serialized_data_t serialized_data = *((serialized_data_t *) data.data);
-            //int type = hash_data.type;
-            //printf("type: %i\n", type);
-            //deserialize_data(hash_data);
-            int data_size = data.size;
-            printf("amount: %i\n", data.amount);
-            printf("size: %i\n", data.size);
             buffer[position] = c_type;
             ++position;
             memcpy(buffer + position, (void *) &data.size, sizeof(int));
             position += sizeof(int);
             memcpy(buffer + position, (void *) &data.amount, sizeof(int));
             position += sizeof(int);
-            serialized_data_t *array_entries = (serialized_data_t *) data.data;
+            auto *array_entries = (serialized_data_t *) data.data;
             for (int i = 0; i < data.amount; ++i) {
                 serialized_data_t array_entry = array_entries[i];
                 position = serialize_data_to_buffer(buffer, size, position, array_entry);
