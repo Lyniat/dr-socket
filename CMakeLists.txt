@@ -2,7 +2,8 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-# set(CMAKE_COMPILE_WARNING_AS_ERROR TRUE) # check for warnings
+set(CMAKE_COMPILE_WARNING_AS_ERROR TRUE) # check for warnings
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -Wpedantic)
 
 # avoid DOWNLOAD_EXTRACT_TIMESTAMP warning in CMake 3.24
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
@@ -11,9 +12,8 @@ endif()
 
 set(THIS_PROJECT_NAME "dr-socket")
 
-project(${THIS_PROJECT_NAME} LANGUAGES C CXX)
+project(${THIS_PROJECT_NAME} LANGUAGES CXX)
 
-set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 
 if(MSVC)
@@ -165,12 +165,11 @@ set_target_properties(${THIS_PROJECT_NAME}
         OUTPUT_NAME "socket"
         )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -fno-exceptions -fno-rtti")
 
-set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG} -O0")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
-set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEBUG} -O3")
+set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -g -fno-eliminate-unused-debug-symbols")
 
 if(APPLE_IOS)
     # use -arch arm64 for a real device
@@ -185,11 +184,9 @@ if(APPLE_IOS)
             "-rpath @loader_path/Frameworks -rpath -fobjc-arc -fobjc-link-runtime"
             )
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${IOS_EXTRA_FLAGS} -ObjC++")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${IOS_EXTRA_FLAGS} -ObjC")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${IOS_EXTRA_LINKER_FLAGS}")
 elseif (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64")
     set(CMAKE_SHARED_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
 endif()
 
@@ -221,12 +218,10 @@ add_custom_command(TARGET ${THIS_PROJECT_NAME}
 
 set (EXTERNAL_EXTRA_FLAGS "")
 if(ZIG_TARGET)
-    set(CMAKE_C_FLAGS "-target ${ZIG_TARGET} ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-target ${ZIG_TARGET} ${CMAKE_CXX_FLAGS}")
 
     set (EXTERNAL_EXTRA_FLAGS
             -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
-            -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
     )
 elseif (ANDROID)
     set (EXTERNAL_EXTRA_FLAGS
@@ -240,7 +235,6 @@ elseif(APPLE_IOS)
     set (EXTERNAL_EXTRA_FLAGS
         -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
         -DCMAKE_CXX_FLAGS=${IOS_EXTRA_FLAGS}
-        -DCMAKE_C_FLAGS=${IOS_EXTRA_FLAGS}
             )
 elseif(APPLE)
     set(EXTERNAL_EXTRA_FLAGS "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}")

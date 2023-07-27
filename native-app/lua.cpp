@@ -1,5 +1,5 @@
 #include "lua.h"
-#include <dragonruby.h>
+#include "ruby.h"
 #include "ext.h"
 #include "api.h"
 #include "help.h"

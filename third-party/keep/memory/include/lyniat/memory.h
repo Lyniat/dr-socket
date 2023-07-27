@@ -22,28 +22,26 @@
 #define FREE_CYCLE lyniat::memory::free_cycle_memory();
 #endif
 
-namespace lyniat {
-    namespace memory {
+namespace lyniat::memory {
 
-        void *debug_malloc(size_t size, const char *info);
+    void *debug_malloc(size_t size, const char *info);
 
-        void *malloc_cycle(size_t size);
+    void *malloc_cycle(size_t size);
 
-        void *debug_malloc_cycle(size_t size, const char *info);
+    void *debug_malloc_cycle(size_t size, const char *info);
 
-        void debug_free(void *ptr, const char *info);
+    void debug_free(void *ptr, const char *info);
 
-        void check_allocated_memory();
+    void check_allocated_memory();
 
-        void free_cycle_memory();
+    void free_cycle_memory();
 
-        void debug_free_cycle_memory(const char *info);
+    void debug_free_cycle_memory(const char *info);
 
-        void default_memory_exception(int, const char *);
+    void default_memory_exception(int, const char *);
 
-        void set_memory_custom_exception(void (*exc)(int, const char *));
+    void set_memory_custom_exception(void (*exc)(int, const char *));
 
-    }
 }
 
 #endif

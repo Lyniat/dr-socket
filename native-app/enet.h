@@ -1,7 +1,7 @@
 #ifndef DR_SOCKET_ENET_H
 #define DR_SOCKET_ENET_H
 
-#include <dragonruby.h>
+#include "ruby.h"
 #include <map>
 #include "lua.h"
 #include <enet/enet.h>

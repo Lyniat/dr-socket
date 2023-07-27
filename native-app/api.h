@@ -1,7 +1,7 @@
 #ifndef DR_SOCKET_API_H
 #define DR_SOCKET_API_H
 
-#include <dragonruby.h>
+#include "ruby.h"
 
 #define API lyniat::socket::api::drb_api
 

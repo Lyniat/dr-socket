@@ -1,5 +1,5 @@
 #include <lyniat/memory.h>
-#include <dragonruby.h>
+#include "ruby.h"
 
 #ifndef lua_State
 #define lua_State mrb_state
@@ -9,8 +9,12 @@
 
 #ifndef luaL_error
 #ifdef DEBUG
+// ignore __VA_ARGS__ is a GNU extension
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #define luaL_error(state, fmt, ...) printf_error(state, "%s " fmt, DEBUG_FILENAME, ##__VA_ARGS__)
 #else
+// ignore __VA_ARGS__ is a GNU extension
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #define luaL_error(state, fmt, ...) printf_error(state, fmt, ##__VA_ARGS__)
 #endif
 #endif

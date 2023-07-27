@@ -4,7 +4,7 @@
 
 #endif
 
-#include <dragonruby.h>
+#include "ruby.h"
 #include "ios.h"
 #include "api.h"
 #include "enet.h"

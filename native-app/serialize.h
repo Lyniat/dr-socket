@@ -1,7 +1,7 @@
 #ifndef DR_SOCKET_SERIALIZE_H
 #define DR_SOCKET_SERIALIZE_H
 
-#include <dragonruby.h>
+#include "ruby.h"
 
 namespace lyniat::socket::serialize {
 
