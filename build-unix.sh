@@ -20,8 +20,6 @@ build_linux()
   cmake --build cmake-build-${OS_TYPE}-${BUILD_TYPE} -j 8
 }
 
-build_android arm64-v8a
-
 if [ $(uname) = "Darwin" ]; then
   OS_TYPE="macos"
 

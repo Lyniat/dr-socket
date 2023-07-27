@@ -140,8 +140,9 @@ add_library(${THIS_PROJECT_NAME} SHARED
         native-app/socket.rb.h
         )
 
-target_link_directories(${THIS_PROJECT_NAME} PRIVATE third-party/bin/${THIRD_PARTY_BIN_DIR}/enet
-        ${THIS_PROJECT_NAME} PRIVATE third-party/bin/${THIRD_PARTY_BIN_DIR}/memory
+target_link_directories(${THIS_PROJECT_NAME} PRIVATE
+        third-party/bin/${THIRD_PARTY_BIN_DIR}/enet
+        third-party/bin/${THIRD_PARTY_BIN_DIR}/memory
 )
 
 if (WIN32)
