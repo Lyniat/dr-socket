@@ -4,6 +4,7 @@
 
 #endif
 
+#include <memory.h>
 #include <dragonruby.h>
 #include "ios.h"
 #include "api.h"
@@ -24,6 +25,14 @@ extern "C" {
 DRB_FFI_EXPORT
 void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api) {
 
+    auto mem = MALLOC(1024);
+
+    check_allocated_memory();
+
+    FREE(mem);
+
+    check_allocated_memory();
+
     drb_api = api;
 
     drb_gtk = drb_api->mrb_module_get(state, "GTK");
@@ -32,35 +41,14 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
 
     drb_api->mrb_load_string(state, ruby_socket_code);
 
-    //print debug information first
-#ifdef META_PLATFORM
-    ruby_print(state, (char *) META_PLATFORM);
-#else
-#error "Missing -DMETA_PLATFORM"
-#endif
-
-#ifdef META_TYPE
-    ruby_print(state, (char *) META_TYPE);
-#else
-#error "Missing -DMETA_TYPE"
-#endif
-
-#ifdef META_GIT_HASH
-    ruby_print(state, (char *) META_GIT_HASH);
-#else
-#error "Missing -DMETA_GIT_HASH"
-#endif
-
-#ifdef META_TIMESTAMP
-    ruby_print(state, (char *) META_TIMESTAMP);
-#else
-#error "Missing -DMETA_TIMESTAMP
-#endif
-
-#ifdef META_COMPILER
-    ruby_print(state, (char *) META_COMPILER);
-#else
-#error "Missing -DMETA_COMPILER
+#if !defined(META_PLATFORM)     || \
+!defined(META_TYPE)             || \
+!defined(META_GIT_HASH)         || \
+!defined(META_GIT_BRANCH)       || \
+!defined(META_TIMESTAMP)        || \
+!defined(META_COMPILER_ID)      || \
+!defined(META_COMPILER_VERSION)
+#error "Missing some Meta information. See CMakeLists.txt for more information.\n"
 #endif
 
     register_socket_symbols(state);
@@ -162,7 +150,7 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
             int position = 0;
             mrb_value data = deserialize_data(mrb, data_buffer.buffer, data_buffer.size, &position);
             drb_api->mrb_ary_push(mrb, array, data);
-            free((void *) data_buffer.buffer);
+            FREE((void *) data_buffer.buffer);
         }
         socket_server_received_buffer.clear();
         return array;
@@ -182,22 +170,15 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
 
                                             serialized_data_t serialized_data = serialize_data(mrb, data);
 
-                                            char *buffer = (char *) malloc(1024 * 1024);
+                                            char *buffer = (char *) MALLOC(1024 * 1024);
                                             int size = serialize_data_to_buffer(buffer, 1024 * 1024, 0,
                                                                                 serialized_data);
 
                                             socket_client_send_to_server(buffer, size);
-                                            free(buffer);
+                                            FREE(buffer);
 
                                             return mrb_nil_value();
                                         }}, MRB_ARGS_REQ(1));
                                         */
 }
 }
-
-// only for debugging purpose in CLion. Just ignore this
-#ifdef __JETBRAINS_IDE__
-int main(int argc, char* argv[]) {
-    drb_register_c_extensions_with_api(nullptr, nullptr);
-}
-#endif

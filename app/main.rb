@@ -54,6 +54,7 @@ end
 
 def tick args
     if args.state.tick_count == 0
+        puts $socket.get_build_info
         if $gtk.argv.include?("server")
             puts "Starting application as server."
             args.state.socket_type = :server
@@ -70,5 +71,6 @@ def tick args
     else
         update_client args
     end
+    $socket.check_allocated_memory
 end
 

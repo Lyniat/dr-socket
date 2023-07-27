@@ -2,6 +2,7 @@
 #include "ext.h"
 #include <cstdio>
 #include <cstring>
+#include <memory.h>
 
 socket_server_t socket_server;
 socket_client_t socket_client;
@@ -74,7 +75,7 @@ void socket_client_create(int num_channels){
 
 void socket_client_destroy(){
     enet_host_destroy(socket_client.client);
-    free((void*)socket_client.server_address);
+    FREE((void*)socket_client.server_address);
     fprintf (stdout, "ENet client was destroyed.\n");
 }
 
@@ -116,7 +117,7 @@ void socket_server_update(){
                         event.packet -> data,
                         event.peer -> data,
                         event.channelID);
-                buffer = (const char*)malloc(event.packet->dataLength);
+                buffer = (const char*)MALLOC(event.packet->dataLength);
                 memcpy((void*)buffer, event.packet->data, event.packet->dataLength);
                 socket_server_received_buffer.push_back({.buffer = buffer, .size = (int)event.packet->dataLength});
                 /* Clean up the packet now that we're done using it. */

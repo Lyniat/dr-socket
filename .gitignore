@@ -1,7 +1,10 @@
 .idea
 /native
 /cmake-build-*
-/third-party
+/third-party/bin
+/third-party/download
+/third-party/source
+# keep keep :D
 *.dylib
 
 .DS_Store
@@ -10,3 +13,5 @@
 out
 
 metadata/ios_metadata.txt
+
+zig-*

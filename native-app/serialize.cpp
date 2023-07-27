@@ -2,6 +2,7 @@
 #include "help.h"
 #include "api.h"
 #include <vector>
+#include <memory.h>
 
 serialized_data_t serialize_data(mrb_state *mrb, mrb_value data){
     mrb_vtype type = mrb_type(data);
@@ -26,7 +27,7 @@ serialized_data_t serialize_data(mrb_state *mrb, mrb_value data){
 
     if(type == MRB_TT_INTEGER){
         mrb_int number = cext_to_int(mrb, data);
-        void* number_copy = malloc(sizeof(mrb_int));
+        void* number_copy = MALLOC(sizeof(mrb_int));
         memcpy(number_copy, &number, sizeof(mrb_int));
         serialized_data_t serialized_int = {.type = MRB_TT_INTEGER, .data = number_copy, .size = sizeof(mrb_int), .amount = 0};
         return serialized_int;
@@ -34,7 +35,7 @@ serialized_data_t serialize_data(mrb_state *mrb, mrb_value data){
 
     if(type == MRB_TT_FLOAT){
         mrb_float number = cext_to_float(mrb, data);
-        void* number_copy = malloc(sizeof(mrb_float));
+        void* number_copy = MALLOC(sizeof(mrb_float));
         memcpy(number_copy, &number, sizeof(mrb_float));
         serialized_data_t serialized_float = {.type = MRB_TT_FLOAT, .data = number_copy, .size = sizeof(mrb_float), .amount = 0};
         return serialized_float;
@@ -68,9 +69,9 @@ serialized_data_t serialize_data(mrb_state *mrb, mrb_value data){
             key = drb_api->mrb_ary_shift(mrb, drb_api->mrb_ensure_array_type(mrb, keys));
         }
         void* raw_data = data_vector.data();
-        void* raw_data_copy = malloc(hash_size * sizeof(serialized_hash_t));
+        void* raw_data_copy = MALLOC(hash_size * sizeof(serialized_hash_t));
         memcpy(raw_data_copy, raw_data, hash_size * sizeof(serialized_hash_t));
-        //void* raw_data_copy = malloc(raw_size);
+        //void* raw_data_copy = MALLOC(raw_size);
         //memcpy(raw_data_copy, raw_data, raw_size);
         serialized_data_t serialized_hash = {.type = MRB_TT_HASH, .data = raw_data_copy, .size = data_size, .amount = hash_size};
         return serialized_hash;
@@ -89,9 +90,9 @@ serialized_data_t serialize_data(mrb_state *mrb, mrb_value data){
             object = drb_api->mrb_ary_shift(mrb, drb_api->mrb_ensure_array_type(mrb, data));
         }
         void* raw_data = data_vector.data();
-        void* raw_data_copy = malloc(array_size * sizeof(serialized_data_t));
+        void* raw_data_copy = MALLOC(array_size * sizeof(serialized_data_t));
         memcpy(raw_data_copy, raw_data, array_size * sizeof(serialized_data_t));
-        //void* raw_data_copy = malloc(raw_size);
+        //void* raw_data_copy = MALLOC(raw_size);
         //memcpy(raw_data_copy, raw_data, raw_size);
         serialized_data_t serialized_array = {.type = MRB_TT_ARRAY, .data = raw_data_copy, .size = data_size, .amount = array_size};
         return serialized_array;
@@ -116,7 +117,7 @@ mrb_value deserialize_data(mrb_state *mrb,const char* buffer, int size, int* pos
         ++*position;
         int data_size = buffer[*position];
         *position += sizeof(int);
-        //const char* data = (const char*)malloc(data_size);
+        //const char* data = (const char*)MALLOC(data_size);
         //memcpy(data, buffer + position, data_size);
         mrb_value data = drb_api->mrb_str_new_cstr(mrb, buffer + *position);
         *position += data_size;

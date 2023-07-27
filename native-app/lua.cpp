@@ -15,7 +15,7 @@ void luaL_where (lua_State *L, int level) {
 ** an error with "stack overflow" instead of the given message.)
 */
 mrb_value printf_error (mrb_state *state, const char *fmt, ...) {
-    void* buffer = malloc(1024 * 1024); //TODO: do not hardcode this!
+    void* buffer = MALLOC(1024 * 1024); //TODO: do not hardcode this!
     auto alt_stdout = fmemopen(buffer, 1024 * 1024, "a"); //TODO: do not hardcode this!
 
     va_list arg;
@@ -28,7 +28,7 @@ mrb_value printf_error (mrb_state *state, const char *fmt, ...) {
 
     fclose(alt_stdout);
     ruby_print_error(state, (char*)buffer);
-    free(buffer);
+    FREE(buffer);
     //return done;
     return mrb_nil_value();
 }

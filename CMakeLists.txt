@@ -18,7 +18,11 @@ if(MSVC)
     message(FATAL_ERROR "MSVC is not supported as compiler.")
 endif()
 
-if(EMSCRIPTEN)
+if(ZIG_TARGET)
+    message("Set ${ZIG_TARGET} as target os by using Zig for compiling.")
+    set(THIRD_PARTY_BIN_DIR zig-${ZIG_TARGET}-${CMAKE_BUILD_TYPE})
+    set(META_PLATFORM \"Zig-${ZIG_TARGET}\")
+elseif(EMSCRIPTEN)
     message(FATAL_ERROR "Emscripten is currently not supported and will probably never be. Sorry :(")
 elseif(RASPBERRY_PI)
     message(FATAL_ERROR "Raspberry Pi is currently not supported.")
@@ -114,6 +118,7 @@ endif ()
 include_directories(
         ${FIND_DR_COMMAND_OUT}/include
         third-party/source/enet/include
+        third-party/keep/memory/include
 )
 
 add_library(${THIS_PROJECT_NAME} SHARED
@@ -135,11 +140,14 @@ add_library(${THIS_PROJECT_NAME} SHARED
         native-app/socket.rb.h
         )
 
-target_link_directories(${THIS_PROJECT_NAME} PRIVATE third-party/bin/${THIRD_PARTY_BIN_DIR}/enet)
+target_link_directories(${THIS_PROJECT_NAME} PRIVATE third-party/bin/${THIRD_PARTY_BIN_DIR}/enet
+        ${THIS_PROJECT_NAME} PRIVATE third-party/bin/${THIRD_PARTY_BIN_DIR}/memory
+)
 
 if (WIN32)
 target_link_libraries(${THIS_PROJECT_NAME}
         PRIVATE
+        memory
         enet
         ws2_32
         winmm
@@ -147,6 +155,7 @@ target_link_libraries(${THIS_PROJECT_NAME}
 else()
 target_link_libraries(${THIS_PROJECT_NAME}
         PRIVATE
+        memory
         enet
         )
 endif()
@@ -211,7 +220,15 @@ add_custom_command(TARGET ${THIS_PROJECT_NAME}
         )
 
 set (EXTERNAL_EXTRA_FLAGS "")
-if (ANDROID)
+if(ZIG_TARGET)
+    set(CMAKE_C_FLAGS "-target ${ZIG_TARGET} ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-target ${ZIG_TARGET} ${CMAKE_CXX_FLAGS}")
+
+    set (EXTERNAL_EXTRA_FLAGS
+            -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+            -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+    )
+elseif (ANDROID)
     set (EXTERNAL_EXTRA_FLAGS
             -DCMAKE_C_COMPILER_WORKS=${CMAKE_C_COMPILER_WORKS} -DCMAKE_CXX_COMPILER_WORKS=${CMAKE_CXX_COMPILER_WORKS}
             -DANDROID_ABI=${ANDROID_ABI} \\
@@ -229,6 +246,8 @@ elseif(APPLE)
     set(EXTERNAL_EXTRA_FLAGS "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}")
 endif()
 
+#message(FATAL_ERROR ${CMAKE_C_COMPILER})
+
 include(ExternalProject)
 ExternalProject_Add(
         enet
@@ -239,9 +258,24 @@ ExternalProject_Add(
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/source/enet
         INSTALL_COMMAND ""
         CMAKE_ARGS -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -DCMAKE_C_COMPILER_WORKS=${CMAKE_C_COMPILER_WORKS} -DCMAKE_CXX_COMPILER_WORKS=${CMAKE_CXX_COMPILER_WORKS}
         ${EXTERNAL_EXTRA_FLAGS}
 
 )
+
+ExternalProject_Add(
+        memory
+        BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/bin/${THIRD_PARTY_BIN_DIR}/memory
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/keep/memory
+        INSTALL_COMMAND ""
+        BUILD_ALWAYS 1
+        CMAKE_ARGS -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -DCMAKE_C_COMPILER_WORKS=${CMAKE_C_COMPILER_WORKS} -DCMAKE_CXX_COMPILER_WORKS=${CMAKE_CXX_COMPILER_WORKS}
+        ${EXTERNAL_EXTRA_FLAGS}
+
+)
+
+add_dependencies(${THIS_PROJECT_NAME} memory)
 
 # add some helpful information to library
 # get the latest commit hash of the working branch git branch
@@ -262,22 +296,26 @@ execute_process(
 
 # branch and hash
 # add_definitions(-DMETA_GIT="git_hash:${META_GIT_HASH}")
-add_definitions(-DMETA_GIT_HASH="git:${META_GIT_BRANCH} ${META_GIT_HASH}")
+add_definitions(-DMETA_GIT_BRANCH="${META_GIT_BRANCH}")
+add_definitions(-DMETA_GIT_HASH="${META_GIT_HASH}")
 
 # platform
 add_definitions(-DMETA_PLATFORM=${META_PLATFORM})
 
 # build type
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_definitions(-DMETA_TYPE="type:release")
-else()
-    add_definitions(-DMETA_TYPE="type:debug")
+    add_definitions(-DMETA_TYPE="Release")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DMETA_TYPE="Debug")
     add_definitions(-DDEBUG)
+else()
+    add_definitions(-DMETA_TYPE="Other")
 endif()
 
 # time stamp
-string(TIMESTAMP META_TIMESTAMP)
-add_definitions(-DMETA_TIMESTAMP="time:${META_TIMESTAMP}")
+string(TIMESTAMP META_TIMESTAMP [UTC])
+add_definitions(-DMETA_TIMESTAMP="${META_TIMESTAMP} UTC")
 
 # compiler
-add_definitions(-DMETA_COMPILER="compiler:${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}")
+add_definitions(-DMETA_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}")
+add_definitions(-DMETA_COMPILER_VERSION="${CMAKE_CXX_COMPILER_VERSION}")

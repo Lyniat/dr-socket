@@ -298,7 +298,7 @@ mrb_value push_event(lua_State *l, ENetEvent *event) {
             cext_hash_set(l, hash, "type", socket_event_receive);
             cext_hash_set(l, hash, "channel", drb_api->mrb_int_value(l, event->channelID));
 
-            //const char* buffer = (const char*)malloc(event->packet->dataLength);
+            //const char* buffer = (const char*)MALLOC(event->packet->dataLength);
             //memcpy((void*)buffer, event->packet->data, event->packet->dataLength);
 
             position = 0;
@@ -395,14 +395,14 @@ mrb_value linked_version(lua_State *l, mrb_value self) {
                     ENET_VERSION_GET_MINOR(enet_linked_version()),
                     ENET_VERSION_GET_PATCH(enet_linked_version()));
 
-    buffer = (char *)malloc(size + 1);
+    buffer = (char *)MALLOC(size + 1);
     snprintf(buffer, size + 1, "%d.%d.%d",
              ENET_VERSION_GET_MAJOR(enet_linked_version()),
              ENET_VERSION_GET_MINOR(enet_linked_version()),
              ENET_VERSION_GET_PATCH(enet_linked_version()));
 
     auto result = drb_api->mrb_str_new(l, buffer, size);
-    //TODO: free buffer?
+    FREE(buffer);
     return result;
 }
 
@@ -588,7 +588,7 @@ mrb_value host_get_socket_address(lua_State *l, mrb_value self) {
                   ((address.host >> 16) & 0xFF),
                   (address.host >> 24& 0xFF),
                   address.port);
-    buffer = (char *)malloc(size + 1);
+    buffer = (char *)MALLOC(size + 1);
     snprintf(buffer, size + 1, "%d.%d.%d.%d:%d",
                  ((address.host) & 0xFF),
                  ((address.host >> 8) & 0xFF),
@@ -921,7 +921,7 @@ mrb_value peer_send(lua_State *l, mrb_value self) {
 
     serialized_data_t serialized_data = serialize_data(l, data);
 
-    char *buffer = (char *) malloc(1024 * 1024); //TODO: no fixed size!
+    char *buffer = (char *) MALLOC(1024 * 1024); //TODO: no fixed size!
     int size = serialize_data_to_buffer(buffer, 1024 * 1024, 0,
                                         serialized_data);
 
@@ -937,7 +937,7 @@ mrb_value peer_send(lua_State *l, mrb_value self) {
         enet_packet_destroy(packet);
     }
 
-    free(buffer);
+    FREE(buffer);
 
     return drb_api->mrb_int_value(l, ret);
 }
@@ -990,4 +990,44 @@ void socket_open_enet(mrb_state* state) {
     undefine_function(last_round_trip_time, 1); //TODO: implement this
     define_function(peer_throttle_configure, 3);
     define_function(peer_timeout, 3);
+
+    drb_api->mrb_define_module_function(state, module_socket, "get_build_info", {[](mrb_state *mrb, mrb_value self) {
+        auto enet_version = linked_version(mrb, self);
+        auto result = drb_api->mrb_hash_new(mrb);
+        cext_hash_set(mrb, result, "enet", enet_version);
+
+        auto meta_platform = (const char*) META_PLATFORM;
+        auto meta_type = (const char*) META_TYPE;
+        auto meta_git_hash = (const char*) META_GIT_HASH;
+        auto meta_git_branch = (const char*) META_GIT_BRANCH;
+        auto meta_timestamp = (const char*) META_TIMESTAMP;
+        auto meta_compiler_id = (const char*) META_COMPILER_ID;
+        auto meta_compiler_version = (const char*) META_COMPILER_VERSION;
+
+        auto build_information = drb_api->mrb_hash_new(mrb);
+        cext_hash_set(mrb, build_information, "target_platform", drb_api->mrb_str_new_cstr(mrb, meta_platform));
+        cext_hash_set(mrb, build_information, "build_type", drb_api->mrb_str_new_cstr(mrb, meta_type));
+        cext_hash_set(mrb, build_information, "git_hash", drb_api->mrb_str_new_cstr(mrb, meta_git_hash));
+        cext_hash_set(mrb, build_information, "git_branch", drb_api->mrb_str_new_cstr(mrb, meta_git_branch));
+        cext_hash_set(mrb, build_information, "build_time", drb_api->mrb_str_new_cstr(mrb, meta_timestamp));
+
+        auto compiler = drb_api->mrb_hash_new(mrb);
+        cext_hash_set(mrb, compiler, "id", drb_api->mrb_str_new_cstr(mrb, meta_compiler_id));
+        cext_hash_set(mrb, compiler, "version", drb_api->mrb_str_new_cstr(mrb, meta_compiler_version));
+
+        cext_hash_set(mrb, build_information, "compiler", compiler);
+
+        cext_hash_set(mrb, result, "build_information", build_information);
+
+        return result;
+    }}, MRB_ARGS_REQ(0));
+
+    drb_api->mrb_define_module_function(state, module_socket, "check_allocated_memory", {[](mrb_state *mrb, mrb_value self) {
+#ifdef DEBUG
+        check_allocated_memory();
+#else
+        ruby_print(mrb, (char*)"check_allocated_memory is only available in a Debug build.")
+#endif
+        return mrb_nil_value();
+    }}, MRB_ARGS_REQ(0));
 }

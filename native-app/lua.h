@@ -1,9 +1,11 @@
+#include <memory.h>
+#include <dragonruby.h>
+
 #ifndef lua_State
 #define lua_State mrb_state
 #endif
 
 // "\e]8;;file://" PATH "\e\\" FILE "\e]8;;\a"
-#define DEBUG_FILENAME (char*)__FILE_NAME__ ":" STRINGIFY(__LINE__)
 
 #ifndef luaL_error
 #ifdef DEBUG
@@ -15,8 +17,6 @@
 
 #ifndef DR_SOCKET_LUA_H
 #define DR_SOCKET_LUA_H
-
-#include <dragonruby.h>
 
 // https://www.lua.org/source/5.4/lauxlib.c.html#luaL_where
 void luaL_where (lua_State *L, int level);
