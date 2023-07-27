@@ -2,6 +2,8 @@
 
 cmake_minimum_required(VERSION 3.22)
 
+# set(CMAKE_COMPILE_WARNING_AS_ERROR TRUE) # check for warnings
+
 # avoid DOWNLOAD_EXTRACT_TIMESTAMP warning in CMake 3.24
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
@@ -135,8 +137,6 @@ add_library(${THIS_PROJECT_NAME} SHARED
         native-app/lua.cpp
         native-app/serialize.h
         native-app/serialize.cpp
-        native-app/socket.h
-        native-app/socket.cpp
         native-app/socket.rb.h
         )
 

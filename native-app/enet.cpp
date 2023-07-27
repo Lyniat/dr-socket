@@ -328,6 +328,7 @@ mrb_value push_event(lua_State *l, ENetEvent *event) {
  */
 ENetPacket *read_packet(lua_State *l, int idx, enet_uint8 *channel_id) {
     // TODO: add
+        return nullptr;
 }
 
 /**
