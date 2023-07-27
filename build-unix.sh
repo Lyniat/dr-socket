@@ -1,7 +1,11 @@
 #!/bin/bash
 
-BUILD_TYPE="Release"
+BUILD_TYPE="Debug"
 FAT=false
+
+if [ $1 = "--release" ]; then
+  BUILD_TYPE="Release"
+fi
 
 build_macos()
 {

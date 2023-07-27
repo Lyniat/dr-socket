@@ -52,7 +52,7 @@ void lyniat::memory::check_allocated_memory(){
     }
 }
 
-void *lyniat::memory::malloc_cycle(size_t size, const char* info){
+void *lyniat::memory::malloc_cycle(size_t size){
     auto ptr = malloc(size);
     memory_allocations_cycle.push_back((uintptr_t)ptr);
     return ptr;

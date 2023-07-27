@@ -3,6 +3,8 @@ set ANDROID_PLATFORM=android-21
 
 set BUILD_TYPE="Debug"
 
+if %1=="--release" set BUILD_TYPE="Release"
+
 call :build_android "arm64-v8a"
 call :build_android "armeabi-v7a"
 call :build_android "x86_64"

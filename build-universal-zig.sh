@@ -1,7 +1,11 @@
 #!/bin/bash
 
-BUILD_TYPE=Debug
+BUILD_TYPE="Debug"
 ZIG_PATH=zig-macos-aarch64
+
+if [ $1 = "--release" ]; then
+  BUILD_TYPE="Release"
+fi
 
 PWD=$(pwd)
 

@@ -657,7 +657,7 @@ mrb_value host_get_peer(lua_State *l, mrb_value self) {
     }
 
     mrb_int peer_index;
-        API->mrb_get_args(l, "i", peer_index);
+        API->mrb_get_args(l, "i", &peer_index);
 
     if (peer_index < 0 || ((size_t) peer_index) >= host->peerCount) {
         //luaL_argerror (l, 2, "Invalid peer index");
@@ -1031,7 +1031,7 @@ void socket_open_enet(mrb_state* state) {
 #ifdef DEBUG
                                             lyniat::memory::check_allocated_memory();
 #else
-                                            ruby_print(mrb, (char*)"check_allocated_memory is only available in a Debug build.")
+                                            ruby_print(mrb, (char*)"check_allocated_memory is only available in a Debug build.");
 #endif
                                             return mrb_nil_value();
                                         }}, MRB_ARGS_REQ(0));

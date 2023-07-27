@@ -27,7 +27,7 @@ namespace lyniat {
 
         void *debug_malloc(size_t size, const char *info);
 
-        void *malloc_cycle(size_t size, const char *info);
+        void *malloc_cycle(size_t size);
 
         void *debug_malloc_cycle(size_t size, const char *info);
 

@@ -4,7 +4,11 @@ NDK_PATH=~/Library/Android/sdk/ndk/25.2.9519653 #macOS
 # NDK_PATH=~/Android/Sdk/ndk/25.2.9519653 #linux
 ANDROID_PLATFORM=android-21
 
-BUILD_TYPE=Debug
+BUILD_TYPE="Debug"
+
+if [ $1 = "--release" ]; then
+  BUILD_TYPE="Release"
+fi
 
 if [ ! -d "$NDK_PATH" ]; then
   echo "NDK_PATH ${NDK_PATH} does not exist. Please change your shell build script."
