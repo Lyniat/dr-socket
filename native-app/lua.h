@@ -1,4 +1,4 @@
-#include <memory.h>
+#include <lyniat/memory.h>
 #include <dragonruby.h>
 
 #ifndef lua_State
@@ -17,9 +17,6 @@
 
 #ifndef DR_SOCKET_LUA_H
 #define DR_SOCKET_LUA_H
-
-// https://www.lua.org/source/5.4/lauxlib.c.html#luaL_where
-void luaL_where (lua_State *L, int level);
 
 /*
 ** Again, the use of 'lua_pushvfstring' ensures this function does

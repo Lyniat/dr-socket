@@ -7,7 +7,7 @@ project(${THIS_PROJECT_NAME} LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 11)
 
 set(SRC
-        include/memory.h
+        include/lyniat/memory.h
         src/memory.cpp
 )
 

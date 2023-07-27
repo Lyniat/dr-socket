@@ -4,11 +4,6 @@
 #include "api.h"
 #include "help.h"
 
-// https://www.lua.org/source/5.4/lauxlib.c.html#luaL_where
-void luaL_where (lua_State *L, int level) {
-    drb_api->mrb_print_backtrace(L);
-}
-
 /*
 ** Again, the use of 'lua_pushvfstring' ensures this function does
 ** not need reserved stack space when called. (At worst, it generates

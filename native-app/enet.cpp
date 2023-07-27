@@ -53,6 +53,9 @@
 	*(ENetPeer**)luaL_checkudata(l, idx, "enet_peer")
 */
 
+using namespace lyniat::socket;
+namespace lyniat::socket::enet {
+
 #define check_host(l, idx)\
 	get_enet_host()
 
@@ -60,10 +63,10 @@
 	get_enet_peer(idx)
 
 #define define_function(f, args) \
-    drb_api->mrb_define_module_function(state, module, #f, f, MRB_ARGS_REQ(args))
+    API->mrb_define_module_function(state, module, #f, f, MRB_ARGS_REQ(args))
 
 #define undefine_function(f, args) \
-    drb_api->mrb_define_module_function(state, module, #f, {[](mrb_state *mrb, mrb_value self) { \
+    API->mrb_define_module_function(state, module, #f, {[](mrb_state *mrb, mrb_value self) { \
         luaL_error(mrb, "Function %s, is currently not implemented. Sorry :(", #f); \
         return mrb_nil_value(); \
     }}, MRB_ARGS_REQ(args))
@@ -110,22 +113,22 @@ void init_enet_bindings(){
 }
 
 void register_socket_symbols(mrb_state *mrb){
-    socket_event_receive = drb_api->mrb_symbol_value(cext_sym(mrb, "s_event_receive"));
-    socket_event_connect = drb_api->mrb_symbol_value(cext_sym(mrb, "s_event_connect"));
-    socket_event_disconnect = drb_api->mrb_symbol_value(cext_sym(mrb, "s_event_disconnect"));
-    socket_event_none = drb_api->mrb_symbol_value(cext_sym(mrb, "s_event_none"));
+    socket_event_receive = API->mrb_symbol_value(cext_sym(mrb, "s_event_receive"));
+    socket_event_connect = API->mrb_symbol_value(cext_sym(mrb, "s_event_connect"));
+    socket_event_disconnect = API->mrb_symbol_value(cext_sym(mrb, "s_event_disconnect"));
+    socket_event_none = API->mrb_symbol_value(cext_sym(mrb, "s_event_none"));
 
-    socket_state_disconnected = drb_api->mrb_symbol_value(cext_sym(mrb, "s_state_disconnected"));
-    socket_state_connecting = drb_api->mrb_symbol_value(cext_sym(mrb, "s_state_connecting"));
-    socket_state_acknowledging_connect = drb_api->mrb_symbol_value(cext_sym(mrb, "s_state_acknowledging_connect"));
-    socket_state_connection_pending = drb_api->mrb_symbol_value(cext_sym(mrb, "s_state_connection_pending"));
-    socket_state_connection_succeeded = drb_api->mrb_symbol_value(cext_sym(mrb, "s_state_connection_succeeded"));
-    socket_state_connected = drb_api->mrb_symbol_value(cext_sym(mrb, "s_state_connected"));
-    socket_state_disconnect_later = drb_api->mrb_symbol_value(cext_sym(mrb, "s_state_disconnect_later"));
-    socket_state_disconnecting = drb_api->mrb_symbol_value(cext_sym(mrb, "s_state_disconnecting"));
-    socket_state_acknowledging_disconnect = drb_api->mrb_symbol_value(cext_sym(mrb, "s_state_acknowledging_disconnect"));
-    socket_state_zombie = drb_api->mrb_symbol_value(cext_sym(mrb, "s_state_zombie"));
-    socket_state_unknown = drb_api->mrb_symbol_value(cext_sym(mrb, "s_state_unknown"));
+    socket_state_disconnected = API->mrb_symbol_value(cext_sym(mrb, "s_state_disconnected"));
+    socket_state_connecting = API->mrb_symbol_value(cext_sym(mrb, "s_state_connecting"));
+    socket_state_acknowledging_connect = API->mrb_symbol_value(cext_sym(mrb, "s_state_acknowledging_connect"));
+    socket_state_connection_pending = API->mrb_symbol_value(cext_sym(mrb, "s_state_connection_pending"));
+    socket_state_connection_succeeded = API->mrb_symbol_value(cext_sym(mrb, "s_state_connection_succeeded"));
+    socket_state_connected = API->mrb_symbol_value(cext_sym(mrb, "s_state_connected"));
+    socket_state_disconnect_later = API->mrb_symbol_value(cext_sym(mrb, "s_state_disconnect_later"));
+    socket_state_disconnecting = API->mrb_symbol_value(cext_sym(mrb, "s_state_disconnecting"));
+    socket_state_acknowledging_disconnect = API->mrb_symbol_value(cext_sym(mrb, "s_state_acknowledging_disconnect"));
+    socket_state_zombie = API->mrb_symbol_value(cext_sym(mrb, "s_state_zombie"));
+    socket_state_unknown = API->mrb_symbol_value(cext_sym(mrb, "s_state_unknown"));
 
     socket_order_flag_reliable = cext_sym(mrb, "s_order_reliable");
     socket_order_flag_unsequenced = cext_sym(mrb, "s_order_unsequenced");
@@ -258,7 +261,7 @@ uintptr_t push_peer(lua_State *l, ENetPeer *peer) {
 mrb_value push_event(lua_State *l, ENetEvent *event) {
     //lua_newtable(l); // event table
 
-    auto hash = drb_api->mrb_hash_new(l);
+    auto hash = API->mrb_hash_new(l);
 
     ENetPeer *peer = nullptr;
     int position;
@@ -268,7 +271,7 @@ mrb_value push_event(lua_State *l, ENetEvent *event) {
     if (event->peer) {
         peer = event->peer;
         uintptr_t key = push_peer(l, peer);
-        cext_hash_set(l, hash, "peer", drb_api->mrb_int_value(l, (mrb_int)key));
+        cext_hash_set(l, hash, "peer", API->mrb_int_value(l, (mrb_int)key));
     }
 
     switch (event->type) {
@@ -296,14 +299,14 @@ mrb_value push_event(lua_State *l, ENetEvent *event) {
             //lua_pushstring(l, "receive");
 
             cext_hash_set(l, hash, "type", socket_event_receive);
-            cext_hash_set(l, hash, "channel", drb_api->mrb_int_value(l, event->channelID));
+            cext_hash_set(l, hash, "channel", API->mrb_int_value(l, event->channelID));
 
             //const char* buffer = (const char*)MALLOC(event->packet->dataLength);
             //memcpy((void*)buffer, event->packet->data, event->packet->dataLength);
 
             position = 0;
             //mrb_value data = deserialize_data(l, buffer, event->packet->dataLength, &position);
-            data = deserialize_data(l, (const char*)event->packet->data, event->packet->dataLength, &position);
+            data = serialize::deserialize_data(l, (const char*)event->packet->data, event->packet->dataLength, &position);
 
             cext_hash_set(l, hash, "data", data);
 
@@ -345,7 +348,7 @@ mrb_value host_create(lua_State *l, mrb_value self) {
     ENetAddress address;
 
     mrb_value h;
-    drb_api->mrb_get_args(l, "H", &h);
+        API->mrb_get_args(l, "H", &h);
 
     auto rb_address = cext_hash_get(l, h, "address");
     const char* str_address = "";
@@ -378,7 +381,8 @@ mrb_value host_create(lua_State *l, mrb_value self) {
 
     socket_enet_host = host;
 
-    return CEXT_INT(l, 1);
+    //return CEXT_INT(l, 1);
+    return mrb_nil_value();
 }
 
 mrb_value linked_version(lua_State *l, mrb_value self) {
@@ -401,7 +405,7 @@ mrb_value linked_version(lua_State *l, mrb_value self) {
              ENET_VERSION_GET_MINOR(enet_linked_version()),
              ENET_VERSION_GET_PATCH(enet_linked_version()));
 
-    auto result = drb_api->mrb_str_new(l, buffer, size);
+    auto result = API->mrb_str_new(l, buffer, size);
     FREE(buffer);
     return result;
 }
@@ -423,7 +427,7 @@ mrb_value host_service(lua_State *l, mrb_value self) {
     ENetEvent event;
     int timeout = 0, out;
 
-    drb_api->mrb_get_args(l, "i", &timeout);
+        API->mrb_get_args(l, "i", &timeout);
 
     out = enet_host_service(host, &event, timeout);
     if (out == 0){
@@ -450,7 +454,8 @@ mrb_value host_check_events(lua_State *l, mrb_value self) {
     if (out < 0) return luaL_error(l, "Error checking event");
 
     push_event(l, &event);
-    return CEXT_INT(l, 1);;
+    //return CEXT_INT(l, 1);
+    return mrb_nil_value();
 }
 
 /**
@@ -495,7 +500,7 @@ mrb_value host_connect(lua_State *l, mrb_value self) {
     size_t channel_count = 1;
 
     mrb_value h;
-    drb_api->mrb_get_args(l, "H", &h);
+        API->mrb_get_args(l, "H", &h);
 
     auto str_address = cext_hash_get_string_default(l, h, "address", "");
 
@@ -513,7 +518,8 @@ mrb_value host_connect(lua_State *l, mrb_value self) {
 
     push_peer(l, peer);
 
-    return CEXT_INT(l, 1);
+    //return CEXT_INT(l, 1);
+    return mrb_nil_value();
 }
 
 mrb_value host_flush(lua_State *l, mrb_value self) {
@@ -534,7 +540,7 @@ mrb_value host_broadcast(lua_State *l, mrb_value self) {
     enet_uint8 channel_id;
     ENetPacket *packet = read_packet(l, 2, &channel_id);
     enet_host_broadcast(host, channel_id, packet);
-    return CEXT_INT(l, 0);
+    return mrb_nil_value();
 }
 
 // Args: limit:number
@@ -544,9 +550,9 @@ mrb_value host_channel_limit(lua_State *l, mrb_value self) {
         return luaL_error(l, "Tried to index a nil host!");
     }
     mrb_int limit;
-    drb_api->mrb_get_args(l, "i", &limit);
+        API->mrb_get_args(l, "i", &limit);
     enet_host_channel_limit(host, limit);
-    return CEXT_INT(l, 0);
+    return mrb_nil_value();
 }
 
 // https://leafo.net/lua-enet/#hostbandwidth_limitincoming_outgoing
@@ -557,10 +563,10 @@ mrb_value host_bandwidth_limit(lua_State *l, mrb_value self) {
     }
     enet_uint32 in_bandwidth, out_bandwidth;
 
-    drb_api->mrb_get_args(l, "ii", &in_bandwidth, &out_bandwidth);
+        API->mrb_get_args(l, "ii", &in_bandwidth, &out_bandwidth);
 
     enet_host_bandwidth_limit(host, in_bandwidth, out_bandwidth);
-    return CEXT_INT(l, 0);
+    return mrb_nil_value();
 }
 
 mrb_value host_get_socket_address(lua_State *l, mrb_value self) {
@@ -596,7 +602,7 @@ mrb_value host_get_socket_address(lua_State *l, mrb_value self) {
                  (address.host >> 24& 0xFF),
                  address.port);
 
-    auto result = drb_api->mrb_str_new(l, buffer, size);
+    auto result = API->mrb_str_new(l, buffer, size);
     //TODO: free buffer?
     return result;
 }
@@ -607,7 +613,7 @@ mrb_value host_total_sent_data(lua_State *l, mrb_value self) {
         return luaL_error(l, "Tried to index a nil host!");
     }
 
-    auto result = drb_api->mrb_int_value(l, host->totalSentData);
+    auto result = API->mrb_int_value(l, host->totalSentData);
     return result;
 }
 
@@ -617,7 +623,7 @@ mrb_value host_total_received_data(lua_State *l, mrb_value self) {
         return luaL_error(l, "Tried to index a nil host!");
     }
 
-    auto result = drb_api->mrb_int_value(l, host->totalReceivedData);
+    auto result = API->mrb_int_value(l, host->totalReceivedData);
     return result;
 }
 
@@ -627,7 +633,7 @@ mrb_value host_service_time(lua_State *l, mrb_value self) {
         return luaL_error(l, "Tried to index a nil host!");
     }
 
-    auto result = drb_api->mrb_int_value(l, host->serviceTime);
+    auto result = API->mrb_int_value(l, host->serviceTime);
     return result;
 }
 
@@ -637,7 +643,7 @@ mrb_value host_peer_count(lua_State *l, mrb_value self) {
         return luaL_error(l, "Tried to index a nil host!");
     }
 
-    auto result = drb_api->mrb_int_value(l, host->peerCount);
+    auto result = API->mrb_int_value(l, host->peerCount);
     return result;
 }
 
@@ -650,7 +656,7 @@ mrb_value host_get_peer(lua_State *l, mrb_value self) {
     }
 
     mrb_int peer_index;
-    drb_api->mrb_get_args(l, "i", peer_index);
+        API->mrb_get_args(l, "i", peer_index);
 
     if (peer_index < 0 || ((size_t) peer_index) >= host->peerCount) {
         //luaL_argerror (l, 2, "Invalid peer index");
@@ -660,7 +666,8 @@ mrb_value host_get_peer(lua_State *l, mrb_value self) {
     ENetPeer *peer = &(host->peers[peer_index]);
 
     push_peer (l, peer);
-    return CEXT_INT(l, 1);
+    //return CEXT_INT(l, 1);
+    return mrb_nil_value();
 }
 
 mrb_value host_gc(lua_State *l) {
@@ -668,7 +675,7 @@ mrb_value host_gc(lua_State *l) {
         enet_host_destroy(socket_enet_host);
     }
     socket_enet_host = nullptr;
-    return CEXT_INT(l, 0);
+    return mrb_nil_value();
 }
 
 /*
@@ -688,7 +695,7 @@ mrb_value peer_tostring(lua_State *l) {
 mrb_value peer_ping(lua_State *l, mrb_value self) {
     ENetPeer *peer = check_peer(l, 1);
     enet_peer_ping(peer);
-    return CEXT_INT(l, 0);
+    return mrb_nil_value();
 }
 
 // https://leafo.net/lua-enet/#peerthrottle_configureinterval_acceleration_deceleration
@@ -696,10 +703,10 @@ mrb_value peer_throttle_configure(lua_State *l, mrb_value self) {
     ENetPeer *peer = check_peer(l, 1);
 
     enet_uint32 interval, acceleration, deceleration;
-    drb_api->mrb_get_args(l, "iii", &interval, &acceleration, &deceleration);
+        API->mrb_get_args(l, "iii", &interval, &acceleration, &deceleration);
 
     enet_peer_throttle_configure(peer, interval, acceleration, deceleration);
-    return CEXT_INT(l, 0);
+    return mrb_nil_value();
 }
 
 // TODO: implement this
@@ -738,11 +745,12 @@ mrb_value peer_ping_interval(lua_State *l, mrb_value self) {
     ENetPeer *peer = check_peer(l, 1);
 
     enet_uint32 interval;
-    drb_api->mrb_get_args(l, "i", &interval);
+        API->mrb_get_args(l, "i", &interval);
 
     enet_peer_ping_interval (peer, interval);
 
-    return CEXT_INT(l, 1);
+    //return CEXT_INT(l, 1);
+    return mrb_nil_value();
 }
 
 mrb_value peer_timeout(lua_State *l, mrb_value self) {
@@ -750,7 +758,7 @@ mrb_value peer_timeout(lua_State *l, mrb_value self) {
 
     enet_uint32 timeout_limit, timeout_minimum, timeout_maximum;
 
-    drb_api->mrb_get_args(l, "iii", &timeout_limit, &timeout_minimum, &timeout_maximum);
+    API->mrb_get_args(l, "iii", &timeout_limit, &timeout_minimum, &timeout_maximum);
 
     enet_peer_timeout (peer, timeout_limit, timeout_minimum, timeout_maximum);
 
@@ -758,10 +766,10 @@ mrb_value peer_timeout(lua_State *l, mrb_value self) {
     //lua_pushinteger (l, peer->timeoutMinimum);
     //lua_pushinteger (l, peer->timeoutMaximum);
 
-    auto result = drb_api->mrb_ary_new(l);
-    drb_api->mrb_ary_push(l, result, drb_api->mrb_int_value(l, peer->timeoutLimit));
-    drb_api->mrb_ary_push(l, result, drb_api->mrb_int_value(l, peer->timeoutMinimum));
-    drb_api->mrb_ary_push(l, result, drb_api->mrb_int_value(l, peer->timeoutMaximum));
+    auto result = API->mrb_ary_new(l);
+    API->mrb_ary_push(l, result, API->mrb_int_value(l, peer->timeoutLimit));
+    API->mrb_ary_push(l, result, API->mrb_int_value(l, peer->timeoutMinimum));
+    API->mrb_ary_push(l, result, API->mrb_int_value(l, peer->timeoutMaximum));
 
     return result;
 }
@@ -801,7 +809,7 @@ mrb_value peer_index(lua_State *l, mrb_value self) {
 
     size_t peer_index = find_peer_index (l, peer->host, peer);
 
-    return drb_api->mrb_int_value(l, (mrb_int)peer_index);
+    return API->mrb_int_value(l, (mrb_int)peer_index);
 }
 
 mrb_value peer_state(lua_State *l, mrb_value self) {
@@ -858,7 +866,7 @@ mrb_value peer_connect_id(lua_State *l, mrb_value self) {
     ENetPeer *peer = check_peer(l, 1);
 
     //lua_pushinteger (l, peer->connectID);
-    return drb_api->mrb_int_value(l, peer->connectID);
+    return API->mrb_int_value(l, peer->connectID);
 }
 
 
@@ -905,7 +913,7 @@ mrb_value peer_receive(lua_State *l, mrb_value self) {
 mrb_value peer_send(lua_State *l, mrb_value self) {
     mrb_int peer_id;
     mrb_value h;
-    drb_api->mrb_get_args(l, "iH", &peer_id, &h);
+    API->mrb_get_args(l, "iH", &peer_id, &h);
 
     auto data = cext_hash_get_save_hash(l, h, "data");
     auto sym_flag = cext_hash_get_sym_default(l, h, "flag", socket_order_flag_reliable);
@@ -919,7 +927,7 @@ mrb_value peer_send(lua_State *l, mrb_value self) {
         flag = ENET_PACKET_FLAG_UNSEQUENCED;
     }
 
-    serialized_data_t serialized_data = serialize_data(l, data);
+    serialize::serialized_data_t serialized_data = serialize::serialize_data(l, data);
 
     char *buffer = (char *) MALLOC(1024 * 1024); //TODO: no fixed size!
     int size = serialize_data_to_buffer(buffer, 1024 * 1024, 0,
@@ -939,18 +947,18 @@ mrb_value peer_send(lua_State *l, mrb_value self) {
 
     FREE(buffer);
 
-    return drb_api->mrb_int_value(l, ret);
+    return API->mrb_int_value(l, ret);
 }
 
 void socket_open_enet(mrb_state* state) {
-    struct RClass *FFI = drb_api->mrb_module_get(state, "FFI");
-    struct RClass *module_socket = drb_api->mrb_module_get_under(state, FFI, "DRSocket");
-    // struct RClass *module = drb_api->mrb_module_get_under(state, module_socket, "Raw");
-    struct RClass *module = drb_api->mrb_module_get_under(state, module_socket, "Raw");
-    // struct RClass *module = drb_api->mrb_class_get_under(state, module_raw, "Raw");
+    struct RClass *FFI = API->mrb_module_get(state, "FFI");
+    struct RClass *module_socket = API->mrb_module_get_under(state, FFI, "DRSocket");
+    // struct RClass *module = API->mrb_module_get_under(state, module_socket, "Raw");
+    struct RClass *module = API->mrb_module_get_under(state, module_socket, "Raw");
+    // struct RClass *module = API->mrb_class_get_under(state, module_raw, "Raw");
 
-    //struct RClass *module_socket = drb_api->mrb_define_module_under(state, FFI, "DRSocket");
-    //struct RClass *module = drb_api->mrb_define_module_under(state, module_socket, "Raw");
+    //struct RClass *module_socket = API->mrb_define_module_under(state, FFI, "DRSocket");
+    //struct RClass *module = API->mrb_define_module_under(state, module_socket, "Raw");
 
     enet_initialize();
     //atexit(enet_deinitialize); TODO: use this
@@ -991,29 +999,29 @@ void socket_open_enet(mrb_state* state) {
     define_function(peer_throttle_configure, 3);
     define_function(peer_timeout, 3);
 
-    drb_api->mrb_define_module_function(state, module_socket, "get_build_info", {[](mrb_state *mrb, mrb_value self) {
+    API->mrb_define_module_function(state, module_socket, "get_build_info", {[](mrb_state *mrb, mrb_value self) {
         auto enet_version = linked_version(mrb, self);
-        auto result = drb_api->mrb_hash_new(mrb);
+        auto result = API->mrb_hash_new(mrb);
         cext_hash_set(mrb, result, "enet", enet_version);
 
-        auto meta_platform = (const char*) META_PLATFORM;
-        auto meta_type = (const char*) META_TYPE;
-        auto meta_git_hash = (const char*) META_GIT_HASH;
-        auto meta_git_branch = (const char*) META_GIT_BRANCH;
-        auto meta_timestamp = (const char*) META_TIMESTAMP;
-        auto meta_compiler_id = (const char*) META_COMPILER_ID;
-        auto meta_compiler_version = (const char*) META_COMPILER_VERSION;
+        auto meta_platform = (const char *) META_PLATFORM;
+        auto meta_type = (const char *) META_TYPE;
+        auto meta_git_hash = (const char *) META_GIT_HASH;
+        auto meta_git_branch = (const char *) META_GIT_BRANCH;
+        auto meta_timestamp = (const char *) META_TIMESTAMP;
+        auto meta_compiler_id = (const char *) META_COMPILER_ID;
+        auto meta_compiler_version = (const char *) META_COMPILER_VERSION;
 
-        auto build_information = drb_api->mrb_hash_new(mrb);
-        cext_hash_set(mrb, build_information, "target_platform", drb_api->mrb_str_new_cstr(mrb, meta_platform));
-        cext_hash_set(mrb, build_information, "build_type", drb_api->mrb_str_new_cstr(mrb, meta_type));
-        cext_hash_set(mrb, build_information, "git_hash", drb_api->mrb_str_new_cstr(mrb, meta_git_hash));
-        cext_hash_set(mrb, build_information, "git_branch", drb_api->mrb_str_new_cstr(mrb, meta_git_branch));
-        cext_hash_set(mrb, build_information, "build_time", drb_api->mrb_str_new_cstr(mrb, meta_timestamp));
+        auto build_information = API->mrb_hash_new(mrb);
+        cext_hash_set(mrb, build_information, "target_platform", API->mrb_str_new_cstr(mrb, meta_platform));
+        cext_hash_set(mrb, build_information, "build_type", API->mrb_str_new_cstr(mrb, meta_type));
+        cext_hash_set(mrb, build_information, "git_hash", API->mrb_str_new_cstr(mrb, meta_git_hash));
+        cext_hash_set(mrb, build_information, "git_branch", API->mrb_str_new_cstr(mrb, meta_git_branch));
+        cext_hash_set(mrb, build_information, "build_time", API->mrb_str_new_cstr(mrb, meta_timestamp));
 
-        auto compiler = drb_api->mrb_hash_new(mrb);
-        cext_hash_set(mrb, compiler, "id", drb_api->mrb_str_new_cstr(mrb, meta_compiler_id));
-        cext_hash_set(mrb, compiler, "version", drb_api->mrb_str_new_cstr(mrb, meta_compiler_version));
+        auto compiler = API->mrb_hash_new(mrb);
+        cext_hash_set(mrb, compiler, "id", API->mrb_str_new_cstr(mrb, meta_compiler_id));
+        cext_hash_set(mrb, compiler, "version", API->mrb_str_new_cstr(mrb, meta_compiler_version));
 
         cext_hash_set(mrb, build_information, "compiler", compiler);
 
@@ -1022,17 +1030,21 @@ void socket_open_enet(mrb_state* state) {
         return result;
     }}, MRB_ARGS_REQ(0));
 
-    drb_api->mrb_define_module_function(state, module_socket, "check_allocated_memory", {[](mrb_state *mrb, mrb_value self) {
+    API->mrb_define_module_function(state, module_socket, "check_allocated_memory",
+                                        {[](mrb_state *mrb, mrb_value self) {
 #ifdef DEBUG
-        check_allocated_memory();
+                                            lyniat::memory::check_allocated_memory();
 #else
-        ruby_print(mrb, (char*)"check_allocated_memory is only available in a Debug build.")
+                                            ruby_print(mrb, (char*)"check_allocated_memory is only available in a Debug build.")
 #endif
-        return mrb_nil_value();
-    }}, MRB_ARGS_REQ(0));
+                                            return mrb_nil_value();
+                                        }}, MRB_ARGS_REQ(0));
 
-    drb_api->mrb_define_module_function(state, module_socket, "__free_cycle_memory", {[](mrb_state *mrb, mrb_value self) {
-        FREE_CYCLE
-        return mrb_nil_value();
-    }}, MRB_ARGS_REQ(0));
+    API->mrb_define_module_function(state, module_socket, "__free_cycle_memory",
+                                        {[](mrb_state *mrb, mrb_value self) {
+                                            FREE_CYCLE
+                                            return mrb_nil_value();
+                                        }}, MRB_ARGS_REQ(0));
+
+}
 }

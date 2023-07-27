@@ -3,10 +3,16 @@
 
 #include <dragonruby.h>
 
-extern drb_api_t *drb_api;
+#define API lyniat::socket::api::drb_api
 
-extern struct RClass* drb_gtk;
-extern struct RClass* drb_runtime;
-extern struct RClass* drb_console;
+namespace lyniat::socket::api {
+
+    extern drb_api_t *drb_api;
+
+    extern struct RClass *drb_gtk;
+    extern struct RClass *drb_runtime;
+    extern struct RClass *drb_console;
+
+}
 
 #endif

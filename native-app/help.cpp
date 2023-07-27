@@ -2,19 +2,19 @@
 #include "help.h"
 
 mrb_int cext_to_int(mrb_state *mrb, mrb_value value){
-    return mrb_integer_func(drb_api->mrb_to_int(mrb, value));
+    return mrb_integer_func(API->mrb_to_int(mrb, value));
 }
 
 mrb_float cext_to_float(mrb_state *mrb, mrb_value value){
-    return drb_api->mrb_to_flo(mrb, value);
+    return API->mrb_to_flo(mrb, value);
 }
 
 const char* cext_to_string(mrb_state *mrb, mrb_value value){
-    return drb_api->mrb_string_cstr(mrb, value);
+    return API->mrb_string_cstr(mrb, value);
 }
 
 mrb_sym cext_sym(mrb_state *mrb, const char* str){
-    return drb_api->mrb_intern_check_cstr(mrb, str);
+    return API->mrb_intern_check_cstr(mrb, str);
 }
 
 mrb_value cext_key(mrb_state *mrb, const char* str){
@@ -22,19 +22,19 @@ mrb_value cext_key(mrb_state *mrb, const char* str){
 }
 
 mrb_value cext_hash_get(mrb_state *mrb, mrb_value hash, const char* key){
-    return drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key));
+    return API->mrb_hash_get(mrb, hash, cext_key(mrb, key));
 }
 
 mrb_int cext_hash_get_int(mrb_state *mrb, mrb_value hash, const char* key){
-    return cext_to_int(mrb, drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key)));
+    return cext_to_int(mrb, API->mrb_hash_get(mrb, hash, cext_key(mrb, key)));
 }
 
 const char* cext_hash_get_string(mrb_state *mrb, mrb_value hash, const char* key){
-    return cext_to_string(mrb, drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key)));
+    return cext_to_string(mrb, API->mrb_hash_get(mrb, hash, cext_key(mrb, key)));
 }
 
 mrb_sym cext_hash_get_sym(mrb_state *mrb, mrb_value hash, const char* key){
-    return drb_api->mrb_obj_to_sym(mrb, cext_hash_get(mrb, hash, key));
+    return API->mrb_obj_to_sym(mrb, cext_hash_get(mrb, hash, key));
 }
 
 mrb_value cext_hash_get_save_hash(mrb_state *mrb, mrb_value hash, const char* key){
@@ -42,11 +42,11 @@ mrb_value cext_hash_get_save_hash(mrb_state *mrb, mrb_value hash, const char* ke
     if((cext_is_hash(mrb, h))){
         return h;
     }
-    return drb_api->mrb_hash_new(mrb);
+    return API->mrb_hash_new(mrb);
 }
 
 void cext_hash_set(mrb_state *mrb, mrb_value hash, const char* key, mrb_value val){
-    drb_api->mrb_hash_set(mrb, hash, cext_key(mrb, key), val);
+    API->mrb_hash_set(mrb, hash, cext_key(mrb, key), val);
 }
 
 bool cext_is_string(mrb_state *mrb, mrb_value value){
@@ -80,7 +80,7 @@ bool cext_is_valid_type(mrb_state *mrb, mrb_value value){
 }
 
 mrb_int cext_hash_get_int_default(mrb_state *mrb, mrb_value hash, const char* key, mrb_int def){
-    auto value = drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key));
+    auto value = API->mrb_hash_get(mrb, hash, cext_key(mrb, key));
     if(cext_is_int(mrb, value)){
         return cext_to_int(mrb, value);
     }
@@ -88,7 +88,7 @@ mrb_int cext_hash_get_int_default(mrb_state *mrb, mrb_value hash, const char* ke
 }
 
 const char* cext_hash_get_string_default(mrb_state *mrb, mrb_value hash, const char* key, const char* def){
-    auto value = drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key));
+    auto value = API->mrb_hash_get(mrb, hash, cext_key(mrb, key));
     if(cext_is_string(mrb, value)){
         return cext_to_string(mrb, value);
     }
@@ -96,9 +96,9 @@ const char* cext_hash_get_string_default(mrb_state *mrb, mrb_value hash, const c
 }
 
 mrb_sym cext_hash_get_sym_default(mrb_state *mrb, mrb_value hash, const char* key, mrb_sym def){
-    auto value = drb_api->mrb_hash_get(mrb, hash, cext_key(mrb, key));
+    auto value = API->mrb_hash_get(mrb, hash, cext_key(mrb, key));
     if(cext_is_symbol(mrb, value)){
-        return drb_api->mrb_obj_to_sym(mrb, value);
+        return API->mrb_obj_to_sym(mrb, value);
     }
     return def;
 }

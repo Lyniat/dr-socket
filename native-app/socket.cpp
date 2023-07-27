@@ -2,7 +2,7 @@
 #include "ext.h"
 #include <cstdio>
 #include <cstring>
-#include <memory.h>
+#include <lyniat/memory.h>
 
 socket_server_t socket_server;
 socket_client_t socket_client;
