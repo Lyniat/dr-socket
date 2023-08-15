@@ -1,3 +1,4 @@
+#pragma once
 #include <lyniat/memory.h>
 #include "ruby.h"
 

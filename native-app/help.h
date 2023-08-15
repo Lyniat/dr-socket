@@ -1,3 +1,4 @@
+#pragma once
 #ifndef DR_SOCKET_HELP_H
 #define DR_SOCKET_HELP_H
 

@@ -1,0 +1,3 @@
+directory:
+  - ["src/enet/include/", "include/"]
+  - ["bin/enet/", "lib/"]

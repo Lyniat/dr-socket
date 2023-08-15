@@ -12,7 +12,7 @@ endif()
 
 set(THIS_PROJECT_NAME "dr-socket")
 
-project(${THIS_PROJECT_NAME} LANGUAGES CXX)
+project(${THIS_PROJECT_NAME} LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -20,62 +20,23 @@ if(MSVC)
     message(FATAL_ERROR "MSVC is not supported as compiler.")
 endif()
 
-if(ZIG_TARGET)
-    message("Set ${ZIG_TARGET} as target os by using Zig for compiling.")
-    set(THIRD_PARTY_BIN_DIR zig-${ZIG_TARGET}-${CMAKE_BUILD_TYPE})
-    set(META_PLATFORM \"Zig-${ZIG_TARGET}\")
-elseif(EMSCRIPTEN)
-    message(FATAL_ERROR "Emscripten is currently not supported and will probably never be. Sorry :(")
-elseif(RASPBERRY_PI)
-    message(FATAL_ERROR "Raspberry Pi is currently not supported.")
-    #message("User set Raspberry Pi as target OS.")
-    set(THIRD_PARTY_BIN_DIR linux-raspberrypi-${CMAKE_BUILD_TYPE})
-    set(META_PLATFORM \"linux-raspberrypi\")
-elseif(WIN32)
-    message("Found Windows as OS.")
-    set(THIRD_PARTY_BIN_DIR windows-amd64-${CMAKE_BUILD_TYPE})
-    set(META_PLATFORM \"Windows_amd64\")
-elseif(APPLE)
-    if(APPLE_IOS)
-        message("User set iOS as target OS.")
-        set(THIRD_PARTY_BIN_DIR ios-device-${CMAKE_BUILD_TYPE})
-        set(META_PLATFORM \"iOS_arm64\")
-        #set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk")
-        set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk")
-    elseif (CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
-        message("Found macOS (Intel) as target OS.")
-        set(THIRD_PARTY_BIN_DIR macos-x86_64-${CMAKE_BUILD_TYPE})
-        set(META_PLATFORM \"macOS_amd64\")
-    else()
-        message("Found macOS (Apple Silicon) as target OS.")
-        set(THIRD_PARTY_BIN_DIR macos-arm64-${CMAKE_BUILD_TYPE})
-        set(META_PLATFORM \"macOS_arm64\")
-    endif()
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    message("Found Linux as target OS.")
-    set(THIRD_PARTY_BIN_DIR linux-amd64-${CMAKE_BUILD_TYPE})
-    set(META_PLATFORM \"Linux_amd64\")
-    set(LINUX TRUE)
-elseif(ANDROID)
-    set(THIRD_PARTY_BIN_DIR android-${ANDROID_ABI}-${CMAKE_BUILD_TYPE})
-    if(${ANDROID_ABI} MATCHES "arm64-v8a")
-        set(ANDROID_TYPE android-arm64)
-    elseif(${ANDROID_ABI} MATCHES "armeabi-v7a")
-        set(ANDROID_TYPE android-arm32)
-    elseif(${ANDROID_ABI} MATCHES "x86_64")
-        set(ANDROID_TYPE android-amd64)
-    elseif(${ANDROID_ABI} MATCHES "x86")
-        set(ANDROID_TYPE android-x86)
-    else()
-        message(FATAL_ERROR "Unsupported Android ABI ${ANDROID_ABI}.")
-    endif()
-    message("User set Android ${ANDROID_TYPE} as target OS.")
-    set(META_PLATFORM \"Android-${ANDROID_TYPE}\")
-    set(CMAKE_C_COMPILER_WORKS 1)
-    set(CMAKE_CXX_COMPILER_WORKS 1)
-else()
-    message(FATAL_ERROR "Unsupported platform.")
-endif()
+find_program(PYTHON_3 python3 HINTS venv/bin)
+if(NOT PYTHON_3)
+    find_package (Python3 COMPONENTS Interpreter REQUIRED HINTS venv)
+    set(PYTHON_3 Python3::Interpreter)
+endif ()
+
+include(tools/cmake/platform.cmake)
+include(tools/cmake/meta.cmake)
+
+get_platform()
+get_property(THIRD_PARTY_TYPE GLOBAL PROPERTY THIRD_PARTY_TYPE)
+set(THIRD_PARTY_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/third-party")
+set(THIRD_PARTY_BIN_DIR "${THIRD_PARTY_BUILD_DIR}/bin")
+set(THIRD_PARTY_SRC_DIR "${THIRD_PARTY_BUILD_DIR}/src")
+set(THIRD_PARTY_DOWNLOAD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/temp/download")
+set(THIRD_PARTY_INSTALL_DIR "${THIRD_PARTY_BUILD_DIR}/install")
+get_property(META_PLATFORM GLOBAL PROPERTY META_PLATFORM)
 
 if(APPLE_IOS)
     execute_process(COMMAND "sh" "${CMAKE_CURRENT_SOURCE_DIR}/tools/get-ios-info.sh"
@@ -119,8 +80,8 @@ endif ()
 
 include_directories(
         ${FIND_DR_COMMAND_OUT}/include
-        third-party/source/enet/include
-        third-party/keep/memory/include
+        ${THIRD_PARTY_INSTALL_DIR}/enet/include
+        ${THIRD_PARTY_INSTALL_DIR}/memory/include
 )
 
 add_library(${THIS_PROJECT_NAME} SHARED
@@ -141,8 +102,8 @@ add_library(${THIS_PROJECT_NAME} SHARED
         )
 
 target_link_directories(${THIS_PROJECT_NAME} PRIVATE
-        third-party/bin/${THIRD_PARTY_BIN_DIR}/enet
-        third-party/bin/${THIRD_PARTY_BIN_DIR}/memory
+        ${THIRD_PARTY_INSTALL_DIR}/enet/lib
+        ${THIRD_PARTY_INSTALL_DIR}/memory/lib
 )
 
 if (WIN32)
@@ -248,54 +209,27 @@ ExternalProject_Add(
         enet
         URL https://github.com/lsalzman/enet/archive/refs/tags/v1.3.17.tar.gz
         URL_HASH MD5=1c3270f1e03ccb2a8544a88d91d2a368
-        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/download/enet
-        BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/bin/${THIRD_PARTY_BIN_DIR}/enet
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/source/enet
-        INSTALL_COMMAND ""
-        CMAKE_ARGS -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        -DCMAKE_C_COMPILER_WORKS=${CMAKE_C_COMPILER_WORKS} -DCMAKE_CXX_COMPILER_WORKS=${CMAKE_CXX_COMPILER_WORKS}
+        DOWNLOAD_DIR ${THIRD_PARTY_DOWNLOAD_DIR}/enet
+        BINARY_DIR ${THIRD_PARTY_BIN_DIR}/enet
+        SOURCE_DIR ${THIRD_PARTY_SRC_DIR}/enet
+        INSTALL_COMMAND ${PYTHON_3} "${CMAKE_CURRENT_SOURCE_DIR}/tools/scripts/install.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/res/enet/"
+        "${THIRD_PARTY_BUILD_DIR}"
+        "${THIRD_PARTY_INSTALL_DIR}/enet"
+        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         ${EXTERNAL_EXTRA_FLAGS}
-
 )
 
 ExternalProject_Add(
         memory
-        BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/bin/${THIRD_PARTY_BIN_DIR}/memory
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/keep/memory
-        INSTALL_COMMAND ""
+        BINARY_DIR ${THIRD_PARTY_BIN_DIR}/memory
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/memory
         BUILD_ALWAYS 1
-        CMAKE_ARGS -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        -DCMAKE_C_COMPILER_WORKS=${CMAKE_C_COMPILER_WORKS} -DCMAKE_CXX_COMPILER_WORKS=${CMAKE_CXX_COMPILER_WORKS}
+        CMAKE_COMMAND ${THIRD_PARTY_CMAKE_COMMAND}
+        CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_INSTALL_DIR}/memory
         ${EXTERNAL_EXTRA_FLAGS}
-
 )
-
-add_dependencies(${THIS_PROJECT_NAME} memory)
-
-# add some helpful information to library
-# get the latest commit hash of the working branch git branch
-execute_process(
-        COMMAND git log -1 --format=%H
-        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-        OUTPUT_VARIABLE META_GIT_HASH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# get git branch name
-execute_process(
-        COMMAND git branch --show-current
-        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-        OUTPUT_VARIABLE META_GIT_BRANCH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# branch and hash
-# add_definitions(-DMETA_GIT="git_hash:${META_GIT_HASH}")
-add_definitions(-DMETA_GIT_BRANCH="${META_GIT_BRANCH}")
-add_definitions(-DMETA_GIT_HASH="${META_GIT_HASH}")
-
-# platform
-add_definitions(-DMETA_PLATFORM=${META_PLATFORM})
 
 # build type
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -307,10 +241,16 @@ else()
     add_definitions(-DMETA_TYPE="Other")
 endif()
 
-# time stamp
-string(TIMESTAMP META_TIMESTAMP [UTC])
-add_definitions(-DMETA_TIMESTAMP="${META_TIMESTAMP} UTC")
 
-# compiler
+get_property(META_GIT_BRANCH GLOBAL PROPERTY META_GIT_BRANCH)
+get_property(META_GIT_HASH GLOBAL PROPERTY META_GIT_HASH)
+get_property(META_TIMESTAMP GLOBAL PROPERTY META_TIMESTAMP)
+get_property(META_COMPILER_ID GLOBAL PROPERTY META_COMPILER_ID)
+get_property(META_COMPILER_VERSION GLOBAL PROPERTY META_COMPILER_VERSION)
+
+add_definitions(-DMETA_PLATFORM=${META_PLATFORM})
+add_definitions(-DMETA_GIT_BRANCH="${META_GIT_BRANCH}")
+add_definitions(-DMETA_GIT_HASH="${META_GIT_HASH}")
+add_definitions(-DMETA_TIMESTAMP="${META_TIMESTAMP}")
 add_definitions(-DMETA_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}")
 add_definitions(-DMETA_COMPILER_VERSION="${CMAKE_CXX_COMPILER_VERSION}")

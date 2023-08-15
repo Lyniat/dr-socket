@@ -1029,7 +1029,7 @@ void socket_open_enet(mrb_state* state) {
     API->mrb_define_module_function(state, module_socket, "check_allocated_memory",
                                         {[](mrb_state *mrb, mrb_value self) {
 #ifdef DEBUG
-                                            lyniat::memory::check_allocated_memory();
+                                            lyniat_memory_check_allocated_memory();
 #else
                                             ruby_print(mrb, (char*)"check_allocated_memory is only available in a Debug build.");
 #endif
