@@ -51,26 +51,9 @@ if(APPLE_IOS)
     endif ()
 endif ()
 
-# helping functions
-if(${CMAKE_HOST_SYSTEM} MATCHES "Windows*") # "WIN32" not working here if cross compiling
-    # find DR parent directory on Windows
-    set(FIND_DR_COMMAND "cmd" "/C" "${CMAKE_CURRENT_SOURCE_DIR}/tools/find-dr.bat")
-else()
-    # find DR parent directory on Unix
-    set(FIND_DR_COMMAND "sh" "${CMAKE_CURRENT_SOURCE_DIR}/tools/find-dr.sh")
-endif()
-
-message(${FIND_DR_COMMAND})
-
-execute_process(COMMAND ${FIND_DR_COMMAND}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+execute_process(COMMAND ${PYTHON_3} "${CMAKE_CURRENT_SOURCE_DIR}/tools/scripts/find-dr.py"
         RESULT_VARIABLE FIND_DR_COMMAND_RESULT
         OUTPUT_VARIABLE FIND_DR_COMMAND_OUT)
-
-# remove new line
-string(REPLACE "\n" "" FIND_DR_COMMAND_OUT ${FIND_DR_COMMAND_OUT})
-# only for windows
-string(REPLACE "\\" "/" FIND_DR_COMMAND_OUT ${FIND_DR_COMMAND_OUT})
 
 if(NOT ${FIND_DR_COMMAND_RESULT} STREQUAL "0")
     message(FATAL_ERROR ${FIND_DR_COMMAND_OUT})
@@ -79,7 +62,7 @@ else()
 endif ()
 
 include_directories(
-        ${FIND_DR_COMMAND_OUT}/include
+        ${FIND_DR_COMMAND_OUT}
         ${THIRD_PARTY_INSTALL_DIR}/enet/include
         ${THIRD_PARTY_INSTALL_DIR}/memory/include
 )
