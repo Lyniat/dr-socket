@@ -10,28 +10,28 @@ CMake should handle all the stuff so after successfully building you should be a
 Additionally required for building:
 - CMake (>= 3.22)
 - git
+- Python 3
 
 ## Windows
 - [MingW](https://winlibs.com) (tested on *GCC 13.1.0 (with POSIX threads) + LLVM/Clang/LLD/LLDB 16.0.5 + MinGW-w64 11.0.0 (UCRT) - release 5*)
-Run ``build-windows-debug.bat`` or ``build-windows-release.bat``.
+Run ``build-windows.bat --target windows``.
 
 ## macOS
-Run ``build-unix-debug.sh`` or ``build-unix-release.sh``.
-clang should be able to compile this out of the box.
+Run ``build-unix.sh --target macos``.
+Add ``-fat-binary`` if you want to create a fat binary for both x86_64 and amd64.
 
 ## Linux
-Run ``build-unix-debug.sh`` or ``build-unix-release.sh``.
-Tested with clang but gcc might also work.
+Run ``build-unix.sh --target linux``.
 
 ## Android
 ### Windows
-Run ``build-android-debug.bat`` or ``build-android-release.bat``.
+Run ``build-windows.bat --target android``.
 
 ### macOS / Linux
-Run ``build-android-debug.sh`` or ``build-android-release.sh``.
+Run ``build-unix.sh --target android``.
 
 ## iOS
-Run ``build-ios-debug.sh``.
+Run ``build-unix.sh --target ios``.
 
 ## Raspberry Pi
 WIP
