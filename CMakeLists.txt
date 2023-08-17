@@ -65,6 +65,7 @@ include_directories(
         ${FIND_DR_COMMAND_OUT}
         ${THIRD_PARTY_INSTALL_DIR}/enet/include
         ${THIRD_PARTY_INSTALL_DIR}/memory/include
+        ${THIRD_PARTY_INSTALL_DIR}/fmt/include
 )
 
 add_library(${THIS_PROJECT_NAME} SHARED
@@ -78,7 +79,6 @@ add_library(${THIS_PROJECT_NAME} SHARED
         native-app/help.cpp
         native-app/ios.h
         native-app/lua.h
-        native-app/lua.cpp
         native-app/serialize.h
         native-app/serialize.cpp
         native-app/socket.rb.h
@@ -87,11 +87,13 @@ add_library(${THIS_PROJECT_NAME} SHARED
 target_link_directories(${THIS_PROJECT_NAME} PRIVATE
         ${THIRD_PARTY_INSTALL_DIR}/enet/lib
         ${THIRD_PARTY_INSTALL_DIR}/memory/lib
+        ${THIRD_PARTY_INSTALL_DIR}/fmt/lib
 )
 
 if (WIN32)
 target_link_libraries(${THIS_PROJECT_NAME}
         PRIVATE
+        fmt
         memory
         enet
         ws2_32
@@ -100,6 +102,7 @@ target_link_libraries(${THIS_PROJECT_NAME}
 else()
 target_link_libraries(${THIS_PROJECT_NAME}
         PRIVATE
+        fmt
         memory
         enet
         )
@@ -211,6 +214,20 @@ ExternalProject_Add(
         CMAKE_COMMAND ${THIRD_PARTY_CMAKE_COMMAND}
         CMAKE_ARGS
         -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_INSTALL_DIR}/memory
+        ${EXTERNAL_EXTRA_FLAGS}
+)
+
+# https://github.com/fmtlib/fmt
+ExternalProject_Add(
+        fmt
+        URL https://github.com/fmtlib/fmt/archive/refs/tags/10.0.0.tar.gz
+        URL_HASH SHA256=ede1b6b42188163a3f2e0f25ad5c0637eca564bd8df74d02e31a311dd6b37ad8
+        DOWNLOAD_DIR ${THIRD_PARTY_DOWNLOAD_DIR}/fmt
+        BINARY_DIR ${THIRD_PARTY_BIN_DIR}/fmt
+        SOURCE_DIR ${THIRD_PARTY_SRC_DIR}/fmt
+        CMAKE_COMMAND ${THIRD_PARTY_CMAKE_COMMAND}
+        CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_INSTALL_DIR}/fmt
         ${EXTERNAL_EXTRA_FLAGS}
 )
 

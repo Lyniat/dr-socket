@@ -1,6 +1,7 @@
 .idea
 /native
 /cmake-build-*
+build
 # keep keep :D
 *.dylib
 

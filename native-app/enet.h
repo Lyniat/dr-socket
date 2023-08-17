@@ -6,6 +6,7 @@
 #include <map>
 #include "lua.h"
 #include <enet/enet.h>
+#include <vector>
 
 namespace lyniat::socket::enet {
 

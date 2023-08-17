@@ -1,0 +1,18 @@
+
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug DR app",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}\\..\\dragonruby.exe",
+            "args": ["dr-socket"],
+            "cwd": "${workspaceRoot}\\..",
+            "stopAtEntry": false,
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "C:\\mingw64\\bin\\gdb.exe",
+        },
+    ]
+}
