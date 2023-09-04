@@ -13,7 +13,7 @@ Additionally required for building:
 - Python 3
 
 ## Windows
-- [read this](readme/msys2.md]) if you want to use MSYS2
+- [read this](readme/msys2.md) if you want to use MSYS2
 - [MingW](https://winlibs.com) (tested on *GCC 13.1.0 (with POSIX threads) + LLVM/Clang/LLD/LLDB 16.0.5 + MinGW-w64 11.0.0 (UCRT) - release 5*)
 - Run ``build-windows.bat --target windows``.
 
