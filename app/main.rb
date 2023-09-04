@@ -11,18 +11,15 @@ def init_server args
 end
 
 def update_server args
-    event = $socket.raw.host_service(100)
+    event = $socket.raw.host_service(0)
     while event
         puts event
         if event.type == :s_event_receive
-          # print("Got message: ", event.data, event.peer)
           puts("Got message: #{event.data}.")
           $socket.raw.peer_send(event.peer, {data: {message: "pong"}})
         elsif event.type == :s_event_connect
-          # print(event.peer, "connected.")
           puts("connected.")
         elsif event.type == :s_event_disconnect
-          # print(event.peer, "disconnected.")
           puts("disconnected.")
         end
 
@@ -31,20 +28,16 @@ def update_server args
 end
 
 def update_client args
-event = $socket.raw.host_service(100)
+    event = $socket.raw.host_service(0)
     while event
         puts event.type
         if event.type == :s_event_receive
-          # print("Got message: ", event.data, event.peer)
           puts("Got message: #{event.data}.")
           $socket.raw.peer_send(event.peer, {data: {message: "ping"}})
         elsif event.type == :s_event_connect
-          # print(event.peer, "connected.")
           puts("connected.")
-          # event.peer:send( "ping" ) TODO:
           $socket.raw.peer_send(event.peer, {data: {message: "ping"}})
         elsif event.type == :s_event_disconnect
-          # print(event.peer, "disconnected.")
           puts("disconnected.")
         end
 

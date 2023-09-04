@@ -12,15 +12,6 @@
 
 using namespace lyniat::socket;
 
-void ruby_print(mrb_state *state, const char *text) {
-    API->mrb_funcall(state, mrb_nil_value(), "puts", 1, API->mrb_str_new_cstr(state, text));
-}
-
-void ruby_print_error(mrb_state *state, const char *text) {
-    // API->mrb_funcall(state, API->mrb_class_path(state, drb_console), "log_error", 1, API->mrb_str_new_cstr(state, text));
-    API->mrb_funcall(state, mrb_nil_value(), "raise", 1, API->mrb_str_new_cstr(state, text));
-}
-
 DRB_FFI
 extern "C" {
 DRB_FFI_EXPORT

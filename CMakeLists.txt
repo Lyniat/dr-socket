@@ -1,5 +1,24 @@
 # CMake file based on https://github.com/Lyniat/dr-cmake-template
 
+function(ensure_python_module module to_install)
+    set(ENSURE_PY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/scripts/ensure.py")
+    execute_process(COMMAND ${PYTHON_3} "${ENSURE_PY_PATH}" "${module}"
+            RESULT_VARIABLE PYTHON_ENSURE_RESULT
+            OUTPUT_VARIABLE PYTHON_ENSURE_OUT)
+
+    if(NOT ${PYTHON_ENSURE_RESULT} STREQUAL "0")
+        message("${PYTHON_ENSURE_OUT}")
+        message("Trying to install '${module}'.")
+        execute_process(COMMAND ${PYTHON_3} "-m pip install ${to_install}"
+                RESULT_VARIABLE PYTHON_INSTALL_RESULT)
+        if(NOT ${PYTHON_INSTALL_RESULT} STREQUAL "0")
+            message(FATAL_ERROR "Failed to install python module '${module}'! Please install int manually.")
+        endif()
+    else()
+        message("Found '${module}'.")
+    endif()
+endfunction()
+
 cmake_minimum_required(VERSION 3.22)
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR TRUE) # check for warnings
@@ -25,6 +44,10 @@ if(NOT PYTHON_3)
     find_package (Python3 COMPONENTS Interpreter REQUIRED HINTS venv)
     set(PYTHON_3 Python3::Interpreter)
 endif ()
+
+ensure_python_module("yaml" "pyyaml")
+ensure_python_module("shutil" "shutil")
+ensure_python_module("pathlib" "pathlib")
 
 include(tools/cmake/platform.cmake)
 include(tools/cmake/meta.cmake)
@@ -73,14 +96,14 @@ add_library(${THIS_PROJECT_NAME} SHARED
         native-app/api.cpp
         native-app/enet.h
         native-app/enet.cpp
-        native-app/ext.h
         native-app/ext.cpp
         native-app/help.h
         native-app/help.cpp
         native-app/ios.h
-        native-app/lua.h
         native-app/serialize.h
         native-app/serialize.cpp
+        native-app/print.h
+        native-app/print.cpp
         native-app/socket.rb.h
         )
 

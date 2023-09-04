@@ -9,12 +9,12 @@ namespace lyniat::socket::serialize {
     serialized_data_t serialize_data(mrb_state *mrb, mrb_value data) {
         mrb_vtype type = mrb_type(data);
         if (type == MRB_TT_FALSE) {
-            serialized_data_t serialized_bool = {.type = MRB_TT_FALSE, .data = nullptr, .size = 0, .amount = 0};
+            serialized_data_t serialized_bool = {MRB_TT_FALSE, nullptr, 0, 0};
             return serialized_bool;
         }
 
         if (type == MRB_TT_TRUE) {
-            serialized_data_t serialized_bool = {.type = MRB_TT_TRUE, .data = nullptr, .size = 0, .amount = 0};
+            serialized_data_t serialized_bool = {MRB_TT_TRUE, nullptr, 0, 0};
             return serialized_bool;
         }
 
@@ -22,8 +22,7 @@ namespace lyniat::socket::serialize {
             const char *string = cext_to_string(mrb, data);
             size_t str_len = strlen(string);
             const char *string_dup = strdup(string);
-            serialized_data_t serialized_string = {.type = MRB_TT_STRING, .data = (void *) string_dup, .size = (int) (
-                    str_len + 1), .amount = 0};
+            serialized_data_t serialized_string = {MRB_TT_STRING, (void *) string_dup, (int) (str_len + 1), 0};
             return serialized_string;
         }
 
@@ -31,7 +30,7 @@ namespace lyniat::socket::serialize {
             mrb_int number = cext_to_int(mrb, data);
             void *number_copy = MALLOC_CYCLE(sizeof(mrb_int));
             memcpy(number_copy, &number, sizeof(mrb_int));
-            serialized_data_t serialized_int = {.type = MRB_TT_INTEGER, .data = number_copy, .size = sizeof(mrb_int), .amount = 0};
+            serialized_data_t serialized_int = {MRB_TT_INTEGER, number_copy, sizeof(mrb_int), 0};
             return serialized_int;
         }
 
@@ -39,7 +38,7 @@ namespace lyniat::socket::serialize {
             mrb_float number = cext_to_float(mrb, data);
             void *number_copy = MALLOC_CYCLE(sizeof(mrb_float));
             memcpy(number_copy, &number, sizeof(mrb_float));
-            serialized_data_t serialized_float = {.type = MRB_TT_FLOAT, .data = number_copy, .size = sizeof(mrb_float), .amount = 0};
+            serialized_data_t serialized_float = {MRB_TT_FLOAT, number_copy, sizeof(mrb_float), 0};
             return serialized_float;
         }
 
@@ -47,8 +46,7 @@ namespace lyniat::socket::serialize {
             const char *string = API->mrb_sym_name(mrb, API->mrb_obj_to_sym(mrb, data));
             size_t str_len = strlen(string);
             const char *string_dup = strdup(string);
-            serialized_data_t serialized_string = {.type = MRB_TT_SYMBOL, .data = (void *) string_dup, .size = (int) (
-                    str_len + 1), .amount = 0};
+            serialized_data_t serialized_string = {MRB_TT_SYMBOL, (void *) string_dup, (int) (str_len + 1), 0};
             return serialized_string;
         }
 
@@ -62,7 +60,7 @@ namespace lyniat::socket::serialize {
                 const char *s_key = strdup(API->mrb_sym_name(mrb, API->mrb_obj_to_sym(mrb, key)));
                 mrb_value content = API->mrb_hash_get(mrb, data, key);
                 serialized_data_t serialized_data = serialize_data(mrb, content);
-                serialized_hash_t serialized_hash_entry = {.key = s_key, .data = serialized_data};
+                serialized_hash_t serialized_hash_entry = {s_key, serialized_data};
                 hash_size++;
                 data_size += serialized_data.size;
                 data_vector.push_back(serialized_hash_entry);
@@ -71,7 +69,7 @@ namespace lyniat::socket::serialize {
             void *raw_data = data_vector.data();
             void *raw_data_copy = MALLOC_CYCLE(hash_size * sizeof(serialized_hash_t));
             memcpy(raw_data_copy, raw_data, hash_size * sizeof(serialized_hash_t));
-            serialized_data_t serialized_hash = {.type = MRB_TT_HASH, .data = raw_data_copy, .size = data_size, .amount = hash_size};
+            serialized_data_t serialized_hash = {MRB_TT_HASH, raw_data_copy, data_size, hash_size};
             return serialized_hash;
         }
 
@@ -90,11 +88,11 @@ namespace lyniat::socket::serialize {
             void *raw_data = data_vector.data();
             void *raw_data_copy = MALLOC_CYCLE(array_size * sizeof(serialized_data_t));
             memcpy(raw_data_copy, raw_data, array_size * sizeof(serialized_data_t));
-            serialized_data_t serialized_array = {.type = MRB_TT_ARRAY, .data = raw_data_copy, .size = data_size, .amount = array_size};
+            serialized_data_t serialized_array = {MRB_TT_ARRAY, raw_data_copy, data_size, array_size};
             return serialized_array;
         }
 
-        serialized_data_t serialized_undef = {.type = MRB_TT_UNDEF, .data = (void *) nullptr, .size = 0};
+        serialized_data_t serialized_undef = {MRB_TT_UNDEF, (void *) nullptr, 0};
         return serialized_undef;
     }
 

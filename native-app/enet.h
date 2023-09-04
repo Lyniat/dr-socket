@@ -4,7 +4,6 @@
 
 #include "ruby.h"
 #include <map>
-#include "lua.h"
 #include <enet/enet.h>
 #include <vector>
 
@@ -53,83 +52,83 @@ namespace lyniat::socket::enet {
 
     ENetPeer *get_enet_peer();
 
-    void parse_address(lua_State *l, const char *addr_str, ENetAddress *address);
+    void parse_address(mrb_state *l, const char *addr_str, ENetAddress *address);
 
-    size_t find_peer_index(lua_State *l, ENetHost *enet_host, ENetPeer *peer);
+    size_t find_peer_index(mrb_state *l, ENetHost *enet_host, ENetPeer *peer);
 
-    uintptr_t compute_peer_key(lua_State *L, ENetPeer *peer);
+    uintptr_t compute_peer_key(mrb_state *L, ENetPeer *peer);
 
-    void push_peer_key(lua_State *L, uintptr_t key);
+    void push_peer_key(mrb_state *L, uintptr_t key);
 
-    uintptr_t push_peer(lua_State *l, ENetPeer *peer);
+    uintptr_t push_peer(mrb_state *l, ENetPeer *peer);
 
-    mrb_value push_event(lua_State *l, ENetEvent *event);
+    mrb_value push_event(mrb_state *l, ENetEvent *event);
 
-    ENetPacket *read_packet(lua_State *l, int idx, enet_uint8 *channel_id);
+    ENetPacket *read_packet(mrb_state *l, int idx, enet_uint8 *channel_id);
 
-    mrb_value host_create(lua_State *l, mrb_value self);
+    mrb_value host_create(mrb_state *l, mrb_value self);
 
-    mrb_value linked_version(lua_State *l, mrb_value self);
+    mrb_value linked_version(mrb_state *l, mrb_value self);
 
-    mrb_value host_service(lua_State *l, mrb_value self);
+    mrb_value host_service(mrb_state *l, mrb_value self);
 
-    mrb_value host_check_events(lua_State *l, mrb_value self);
+    mrb_value host_check_events(mrb_state *l, mrb_value self);
 
-    mrb_value host_compress_with_range_coder(lua_State *l);
+    mrb_value host_compress_with_range_coder(mrb_state *l);
 
-    mrb_value host_connect(lua_State *l, mrb_value self);
+    mrb_value host_connect(mrb_state *l, mrb_value self);
 
-    mrb_value host_flush(lua_State *l, mrb_value self);
+    mrb_value host_flush(mrb_state *l, mrb_value self);
 
-    mrb_value host_broadcast(lua_State *l, mrb_value self);
+    mrb_value host_broadcast(mrb_state *l, mrb_value self);
 
-    mrb_value host_channel_limit(lua_State *l, mrb_value self);
+    mrb_value host_channel_limit(mrb_state *l, mrb_value self);
 
-    mrb_value host_bandwidth_limit(lua_State *l, mrb_value self);
+    mrb_value host_bandwidth_limit(mrb_state *l, mrb_value self);
 
-    mrb_value host_get_socket_address(lua_State *l, mrb_value self);
+    mrb_value host_get_socket_address(mrb_state *l, mrb_value self);
 
-    mrb_value host_total_sent_data(lua_State *l, mrb_value self);
+    mrb_value host_total_sent_data(mrb_state *l, mrb_value self);
 
-    mrb_value host_total_received_data(lua_State *l, mrb_value self);
+    mrb_value host_total_received_data(mrb_state *l, mrb_value self);
 
-    mrb_value host_service_time(lua_State *l, mrb_value self);
+    mrb_value host_service_time(mrb_state *l, mrb_value self);
 
-    mrb_value host_peer_count(lua_State *l, mrb_value self);
+    mrb_value host_peer_count(mrb_state *l, mrb_value self);
 
-    mrb_value host_get_peer(lua_State *l, mrb_value self);
+    mrb_value host_get_peer(mrb_state *l, mrb_value self);
 
-    mrb_value host_gc(lua_State *l);
+    mrb_value host_gc(mrb_state *l);
 
-    mrb_value peer_tostring(lua_State *l);
+    mrb_value peer_tostring(mrb_state *l);
 
-    mrb_value peer_ping(lua_State *l, mrb_value self);
+    mrb_value peer_ping(mrb_state *l, mrb_value self);
 
-    mrb_value peer_throttle_configure(lua_State *l, mrb_value self);
+    mrb_value peer_throttle_configure(mrb_state *l, mrb_value self);
 
-    int peer_round_trip_time(lua_State *l);
+    int peer_round_trip_time(mrb_state *l);
 
-    int peer_last_round_trip_time(lua_State *l);
+    int peer_last_round_trip_time(mrb_state *l);
 
-    mrb_value peer_ping_interval(lua_State *l, mrb_value self);
+    mrb_value peer_ping_interval(mrb_state *l, mrb_value self);
 
-    mrb_value peer_timeout(lua_State *l, mrb_value self);
+    mrb_value peer_timeout(mrb_state *l, mrb_value self);
 
-    mrb_value peer_disconnect(lua_State *l, mrb_value self);
+    mrb_value peer_disconnect(mrb_state *l, mrb_value self);
 
-    mrb_value peer_disconnect_now(lua_State *l, mrb_value self);
+    mrb_value peer_disconnect_now(mrb_state *l, mrb_value self);
 
-    mrb_value peer_disconnect_later(lua_State *l, mrb_value self);
+    mrb_value peer_disconnect_later(mrb_state *l, mrb_value self);
 
-    mrb_value peer_index(lua_State *l, mrb_value self);
+    mrb_value peer_index(mrb_state *l, mrb_value self);
 
-    mrb_value peer_state(lua_State *l, mrb_value self);
+    mrb_value peer_state(mrb_state *l, mrb_value self);
 
-    mrb_value peer_connect_id(lua_State *l, mrb_value self);
+    mrb_value peer_connect_id(mrb_state *l, mrb_value self);
 
-    mrb_value peer_receive(lua_State *l, mrb_value self);
+    mrb_value peer_receive(mrb_state *l, mrb_value self);
 
-    mrb_value peer_send(lua_State *l, mrb_value self);
+    mrb_value peer_send(mrb_state *l, mrb_value self);
 
 }
 
