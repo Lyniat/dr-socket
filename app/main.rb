@@ -46,6 +46,7 @@ def update_client args
 end
 
 def tick args
+    # $socket.check_allocated_memory
     if args.state.tick_count == 0
         puts $socket.get_build_info
         if $gtk.argv.include?("server")
@@ -64,6 +65,5 @@ def tick args
     else
         update_client args
     end
-    # $socket.check_allocated_memory
 end
 

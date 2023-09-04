@@ -3,6 +3,7 @@
 #define DR_SOCKET_SERIALIZE_H
 
 #include "ruby.h"
+#include "buffer.h"
 
 namespace lyniat::socket::serialize {
 
@@ -22,7 +23,7 @@ namespace lyniat::socket::serialize {
 
     mrb_value deserialize_data(mrb_state *mrb, const char *buffer, int size, int *position);
 
-    int serialize_data_to_buffer(char *buffer, int size, int position, serialized_data_t data);
+    void serialize_data_to_buffer(buffer::BinaryBuffer *binary_buffer, serialized_data_t data);
 
 }
 

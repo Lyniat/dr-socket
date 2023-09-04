@@ -183,70 +183,57 @@ namespace lyniat::socket::serialize {
         return mrb_nil_value();
     }
 
-    int serialize_data_to_buffer(char *buffer, int size, int position, serialized_data_t data) {
+    void serialize_data_to_buffer(buffer::BinaryBuffer *binary_buffer, serialized_data_t data) {
         char c_type = data.type;
         if (data.type == MRB_TT_STRING || data.type == MRB_TT_SYMBOL) {
-            buffer[position] = c_type;
-            ++position;
-            memcpy(buffer + position, (void *) &data.size, sizeof(int));
-            position += sizeof(int);
-            memcpy(buffer + position, data.data, data.size);
-            position += data.size;
+            binary_buffer->Append(c_type);
+            binary_buffer->Append(&data.size, sizeof(int));
+            binary_buffer->Append(data.data, data.size);
         }
         if (data.type == MRB_TT_INTEGER) {
-            buffer[position] = c_type;
-            ++position;
-            memcpy(buffer + position, data.data, sizeof(mrb_int));
-            position += sizeof(mrb_int);
+            binary_buffer->Append(c_type);
+            binary_buffer->Append(data.data, sizeof(mrb_int));
         }
         if (data.type == MRB_TT_FALSE) {
-            buffer[position] = c_type;
-            ++position;
+            binary_buffer->Append(c_type);
         }
         if (data.type == MRB_TT_TRUE) {
-            buffer[position] = c_type;
-            ++position;
+            binary_buffer->Append(c_type);
         }
         if (data.type == MRB_TT_FLOAT) {
-            buffer[position] = c_type;
-            ++position;
-            memcpy(buffer + position, data.data, sizeof(mrb_float));
-            position += sizeof(mrb_float);
+            binary_buffer->Append(c_type);
+            binary_buffer->Append(data.data, sizeof(mrb_float));
         }
         if (data.type == MRB_TT_HASH) {
-            buffer[position] = c_type;
-            ++position;
-            memcpy(buffer + position, (void *) &data.size, sizeof(int));
-            position += sizeof(int);
-            memcpy(buffer + position, (void *) &data.amount, sizeof(int));
-            position += sizeof(int);
+            binary_buffer->Append(c_type);
+            binary_buffer->Append(&data.size, sizeof(int));
+            binary_buffer->Append(&data.amount, sizeof(int));
+
             auto *hash_entries = (serialized_hash_t *) data.data;
             for (int i = 0; i < data.amount; ++i) {
                 serialized_hash_t hash_entry = hash_entries[i];
-                const char *key = hash_entry.key;
+                char *key = (char*)hash_entry.key;
 
                 //key
                 int key_len = (int) strlen(key) + 1;
-                memcpy(buffer + position, (void *) &key_len, sizeof(int));
-                position += sizeof(int);
-                memcpy(buffer + position, key, key_len);
-                position += key_len;
-                position = serialize_data_to_buffer(buffer, size, position, hash_entry.data);
+
+                binary_buffer->Append(&key_len, sizeof(int));
+
+                binary_buffer->Append(key, key_len);
+
+                serialize_data_to_buffer(binary_buffer, hash_entry.data);
             }
         }
         if (data.type == MRB_TT_ARRAY) {
-            buffer[position] = c_type;
-            ++position;
-            memcpy(buffer + position, (void *) &data.size, sizeof(int));
-            position += sizeof(int);
-            memcpy(buffer + position, (void *) &data.amount, sizeof(int));
-            position += sizeof(int);
+            binary_buffer->Append(c_type);
+            binary_buffer->Append(&data.size, sizeof(int));
+            binary_buffer->Append(&data.amount, sizeof(int));
+
             auto *array_entries = (serialized_data_t *) data.data;
             for (int i = 0; i < data.amount; ++i) {
                 serialized_data_t array_entry = array_entries[i];
-                position = serialize_data_to_buffer(buffer, size, position, array_entry);
+                serialize_data_to_buffer(binary_buffer, array_entry);
             }
         }
-        return position;
     }
 }

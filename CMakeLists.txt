@@ -95,6 +95,8 @@ include_directories(
 add_library(${THIS_PROJECT_NAME} SHARED
         native-app/api.h
         native-app/api.cpp
+        native-app/buffer.h
+        native-app/buffer.cpp
         native-app/enet.h
         native-app/enet.cpp
         native-app/ext.cpp

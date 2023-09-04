@@ -44,6 +44,7 @@
 #include "help.h"
 #include "serialize.h"
 #include "print.h"
+#include "buffer.h"
 
 /*
 #define check_host(l, idx)\
@@ -880,12 +881,11 @@ mrb_value peer_send(mrb_state *l, mrb_value self) {
 
     serialize::serialized_data_t serialized_data = serialize::serialize_data(l, data);
 
-    char *buffer = (char *) MALLOC(1024 * 1024); //TODO: no fixed size!
-    int size = serialize_data_to_buffer(buffer, 1024 * 1024, 0,
-                                        serialized_data);
+    auto buffer = new buffer::BinaryBuffer();
+    serialize_data_to_buffer(buffer,serialized_data);
 
-    ENetPacket * packet = enet_packet_create (buffer,
-                                              size,
+    ENetPacket * packet = enet_packet_create (buffer->Data(),
+                                              buffer->Size(),
                                               flag);
 
     ENetPeer *peer = get_enet_peer(peer_id);
@@ -896,7 +896,7 @@ mrb_value peer_send(mrb_state *l, mrb_value self) {
         enet_packet_destroy(packet);
     }
 
-    FREE(buffer);
+    delete buffer;
 
     return API->mrb_int_value(l, ret);
 }

@@ -18,11 +18,23 @@ mrb_sym cext_sym(mrb_state *mrb, const char* str){
 }
 
 mrb_value cext_key(mrb_state *mrb, const char* str){
+    //return mrb_symbol_value(cext_sym(mrb, str));
+    return API->mrb_str_new_cstr(mrb, str);
+}
+
+mrb_value cext_key_sym(mrb_state *mrb, const char* str){
     return mrb_symbol_value(cext_sym(mrb, str));
 }
 
 mrb_value cext_hash_get(mrb_state *mrb, mrb_value hash, const char* key){
-    return API->mrb_hash_get(mrb, hash, cext_key(mrb, key));
+    /*
+    auto result_with_str = API->mrb_hash_get(mrb, hash, cext_key(mrb, key));
+    if(result_with_str.w == 0){
+        return API->mrb_hash_get(mrb, hash, cext_key_sym(mrb, key));
+    }
+    return result_with_str;
+     */
+    return API->mrb_hash_get(mrb, hash, cext_key_sym(mrb, key));
 }
 
 mrb_int cext_hash_get_int(mrb_state *mrb, mrb_value hash, const char* key){
@@ -46,7 +58,9 @@ mrb_value cext_hash_get_save_hash(mrb_state *mrb, mrb_value hash, const char* ke
 }
 
 void cext_hash_set(mrb_state *mrb, mrb_value hash, const char* key, mrb_value val){
-    API->mrb_hash_set(mrb, hash, cext_key(mrb, key), val);
+    //API->mrb_hash_set(mrb, hash, API->mrb_str_new_cstr(mrb, key), val);
+    API->mrb_hash_set(mrb, hash, cext_key_sym(mrb, key), val);
+    //API->mrb_hash_set(mrb, hash, API->mrb_(mrb, API->mrb_str_new_cstr(mrb, key)), val);
 }
 
 bool cext_is_string(mrb_state *mrb, mrb_value value){
@@ -74,7 +88,7 @@ bool cext_is_undef(mrb_state *mrb, mrb_value value){
 }
 
 mrb_int cext_hash_get_int_default(mrb_state *mrb, mrb_value hash, const char* key, mrb_int def){
-    auto value = API->mrb_hash_get(mrb, hash, cext_key(mrb, key));
+    auto value = cext_hash_get(mrb, hash, key);
     if(cext_is_int(mrb, value)){
         return cext_to_int(mrb, value);
     }
@@ -82,7 +96,7 @@ mrb_int cext_hash_get_int_default(mrb_state *mrb, mrb_value hash, const char* ke
 }
 
 const char* cext_hash_get_string_default(mrb_state *mrb, mrb_value hash, const char* key, const char* def){
-    auto value = API->mrb_hash_get(mrb, hash, cext_key(mrb, key));
+    auto value = cext_hash_get(mrb, hash, key);
     if(cext_is_string(mrb, value)){
         return cext_to_string(mrb, value);
     }
@@ -90,7 +104,7 @@ const char* cext_hash_get_string_default(mrb_state *mrb, mrb_value hash, const c
 }
 
 mrb_sym cext_hash_get_sym_default(mrb_state *mrb, mrb_value hash, const char* key, mrb_sym def){
-    auto value = API->mrb_hash_get(mrb, hash, cext_key(mrb, key));
+    auto value = cext_hash_get(mrb, hash, key);
     if(cext_is_symbol(mrb, value)){
         return API->mrb_obj_to_sym(mrb, value);
     }
