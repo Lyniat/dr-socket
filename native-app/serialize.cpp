@@ -56,8 +56,13 @@ namespace lyniat::socket::serialize {
             std::vector<serialized_hash_t> data_vector;
             int data_size = 0;
             int hash_size = 0;
-            while (cext_is_symbol(mrb, key)) {
-                const char *s_key = strdup(API->mrb_sym_name(mrb, API->mrb_obj_to_sym(mrb, key)));
+            while (cext_is_symbol(mrb, key) || cext_is_string(mrb, key)) {
+                const char *s_key;
+                if(cext_is_symbol(mrb, key)){
+                    s_key = strdup(API->mrb_sym_name(mrb, API->mrb_obj_to_sym(mrb, key)));
+                } else {
+                    s_key = strdup(API->mrb_string_cstr(mrb, key));
+                }
                 mrb_value content = API->mrb_hash_get(mrb, data, key);
                 serialized_data_t serialized_data = serialize_data(mrb, content);
                 serialized_hash_t serialized_hash_entry = {s_key, serialized_data};
