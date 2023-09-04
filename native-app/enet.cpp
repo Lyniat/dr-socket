@@ -56,12 +56,6 @@
 using namespace lyniat::socket;
 namespace lyniat::socket::enet {
 
-#define check_host(l, idx)\
-	get_enet_host()
-
-#define check_peer(l, idx)\
-	get_enet_peer(idx)
-
 #define define_function(f, args) \
     API->mrb_define_module_function(state, module, #f, f, MRB_ARGS_REQ(args))
 
@@ -76,7 +70,7 @@ namespace lyniat::socket::enet {
 ENetHost* socket_enet_host;
 ENetPeer* socket_enet_peer;
 
-std::map<uintptr_t, ENetPeer *> socket_enet_peers;
+std::map<uint64_t, socket_peer_t> socket_enet_peers;
 std::vector<socket_event_t> socket_enet_events;
 
 mrb_value socket_event_receive;
@@ -104,8 +98,12 @@ ENetHost* get_enet_host(){
     return socket_enet_host;
 }
 
-ENetPeer* get_enet_peer(uintptr_t id){
-    return socket_enet_peers[id];
+ENetPeer* get_enet_peer(uint64_t id){
+    auto peer = socket_enet_peers[id];
+    if(peer.authorized || true){ //TODO: add real check
+        return peer.peer;
+    }
+    return nullptr;
 }
 
 void init_enet_bindings(){
@@ -198,69 +196,22 @@ size_t find_peer_index(mrb_state *l, ENetHost *enet_host, ENetPeer *peer) {
     return peer_index;
 }
 
-uintptr_t compute_peer_key(mrb_state *L, ENetPeer *peer)
+uint64_t compute_peer_key(ENetPeer *peer)
 {
-    // ENet peers are be allocated on the heap in an array. Lua numbers
-    // (doubles) can store all possible integers up to 2^53. We can store
-    // pointers that use more than 53 bits if their alignment is guaranteed to
-    // be more than 1. For example an alignment requirement of 8 means we can
-    // shift the pointer's bits by 3.
-
-    // Please see these for the reason of this ternary operator:
-    // * https://github.com/love2d/love/issues/1916
-    // * https://github.com/love2d/love/commit/4ab9a1ce8c
-    const size_t minalign = sizeof(void*) == 8 ? std::min(ENET_ALIGNOF(ENetPeer), ENET_ALIGNOF(std::max_align_t)) : 1;
-    uintptr_t key = (uintptr_t) peer;
-
-    if ((key & (minalign - 1)) != 0)
-    {
-        print::print(L, print::PRINT_ERROR, "Cannot push enet peer to Lua: unexpected alignment "
-                      "(pointer is {} but alignment should be {})", key, minalign);
-    }
-
-    static const size_t shift = (size_t) log2((double) minalign);
-
-    return key >> shift;
+    return (uint64_t)peer->address.host << 32 | peer->address.port;
 }
 
-/*
-void push_peer_key(mrb_state *L, uintptr_t key)
-{
-    // If full 64-bit lightuserdata is supported (or it's 32-bit platform),
-    // always use that. Otherwise, if the key is smaller than 2^53 (which is
-    // integer precision for double datatype) on 64-bit platform, then push
-    // number. Otherwise, throw error.
-    if (supports_full_lightuserdata(L))
-        lua_pushlightuserdata(L, (void*) key);
-#if UINTPTR_MAX == 0xffffffffffffffff
-    else if (key > 0x20000000000000ULL) // 2^53
-        print::print(L, "Cannot push enet peer to Lua: pointer value %p is too large", key);
-#endif
-    else
-        lua_pushnumber(L, (lua_Number) key);
-}
-*/
-
-uintptr_t push_peer(mrb_state *l, ENetPeer *peer) {
-    uintptr_t key = compute_peer_key(l, peer);
-
-    // try to find in peer table
-    // lua_getfield(l, LUA_REGISTRYINDEX, "enet_peers");
-    // push_peer_key(l, key);
-    // lua_gettable(l, -2);
-    // auto found_peer = socket_enet_peers.at(key);
-
+uint64_t push_peer(ENetPeer *peer) {
+    uint64_t key = compute_peer_key(peer);
 
     if(!socket_enet_peers.count(key)){
-        socket_enet_peers[key] = peer;
+        socket_enet_peers[key] = {peer, false};
     }
 
     return key;
 }
 
 mrb_value push_event(mrb_state *l, ENetEvent *event) {
-    //lua_newtable(l); // event table
-
     auto hash = API->mrb_hash_new(l);
 
     ENetPeer *peer = nullptr;
@@ -270,7 +221,7 @@ mrb_value push_event(mrb_state *l, ENetEvent *event) {
 
     if (event->peer) {
         peer = event->peer;
-        uintptr_t key = push_peer(l, peer);
+        uint64_t key = push_peer(peer);
         cext_hash_set(l, hash, "peer", API->mrb_int_value(l, (mrb_int)key));
     }
 
@@ -421,7 +372,7 @@ mrb_value linked_version(mrb_state *l, mrb_value self) {
  *	an event table on event
  */
 mrb_value host_service(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -443,7 +394,7 @@ mrb_value host_service(mrb_state *l, mrb_value self) {
  * Dispatch a single event if available
  */
 mrb_value host_check_events(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -488,7 +439,7 @@ mrb_value host_compress_with_range_coder(mrb_state *l) {
  *	[data = 0]
  */
 mrb_value host_connect(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -499,7 +450,7 @@ mrb_value host_connect(mrb_state *l, mrb_value self) {
     size_t channel_count = 1;
 
     mrb_value h;
-        API->mrb_get_args(l, "H", &h);
+    API->mrb_get_args(l, "H", &h);
 
     auto str_address = cext_hash_get_string_default(l, h, "address", "");
 
@@ -515,14 +466,13 @@ mrb_value host_connect(mrb_state *l, mrb_value self) {
         return print::print(l, print::PRINT_ERROR, "Failed to create peer");
     }
 
-    push_peer(l, peer);
+    push_peer(peer);
 
-    //return CEXT_INT(l, 1);
     return mrb_nil_value();
 }
 
 mrb_value host_flush(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -531,7 +481,7 @@ mrb_value host_flush(mrb_state *l, mrb_value self) {
 }
 
 mrb_value host_broadcast(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -544,7 +494,7 @@ mrb_value host_broadcast(mrb_state *l, mrb_value self) {
 
 // Args: limit:number
 mrb_value host_channel_limit(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -556,7 +506,7 @@ mrb_value host_channel_limit(mrb_state *l, mrb_value self) {
 
 // https://leafo.net/lua-enet/#hostbandwidth_limitincoming_outgoing
 mrb_value host_bandwidth_limit(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -569,7 +519,7 @@ mrb_value host_bandwidth_limit(mrb_state *l, mrb_value self) {
 }
 
 mrb_value host_get_socket_address(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -607,7 +557,7 @@ mrb_value host_get_socket_address(mrb_state *l, mrb_value self) {
 }
 
 mrb_value host_total_sent_data(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -617,7 +567,7 @@ mrb_value host_total_sent_data(mrb_state *l, mrb_value self) {
 }
 
 mrb_value host_total_received_data(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -627,7 +577,7 @@ mrb_value host_total_received_data(mrb_state *l, mrb_value self) {
 }
 
 mrb_value host_service_time(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -637,7 +587,7 @@ mrb_value host_service_time(mrb_state *l, mrb_value self) {
 }
 
 mrb_value host_peer_count(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -649,7 +599,7 @@ mrb_value host_peer_count(mrb_state *l, mrb_value self) {
 // https://leafo.net/lua-enet/#hostget_peerindex
 // TODO: !
 mrb_value host_get_peer(mrb_state *l, mrb_value self) {
-    ENetHost *host = check_host(l, 1);
+    ENetHost *host = get_enet_host();
     if (!host) {
         return print::print(l, print::PRINT_ERROR, "Tried to index a nil host!");
     }
@@ -664,7 +614,7 @@ mrb_value host_get_peer(mrb_state *l, mrb_value self) {
 
     ENetPeer *peer = &(host->peers[peer_index]);
 
-    push_peer (l, peer);
+    push_peer (peer);
     //return CEXT_INT(l, 1);
     return mrb_nil_value();
 }
@@ -692,17 +642,17 @@ mrb_value peer_tostring(mrb_state *l) {
  */
 
 mrb_value peer_ping(mrb_state *l, mrb_value self) {
-    ENetPeer *peer = check_peer(l, 1);
+    ENetPeer *peer = get_enet_peer(1);
     enet_peer_ping(peer);
     return mrb_nil_value();
 }
 
 // https://leafo.net/lua-enet/#peerthrottle_configureinterval_acceleration_deceleration
 mrb_value peer_throttle_configure(mrb_state *l, mrb_value self) {
-    ENetPeer *peer = check_peer(l, 1);
+    ENetPeer *peer = get_enet_peer(1);
 
     enet_uint32 interval, acceleration, deceleration;
-        API->mrb_get_args(l, "iii", &interval, &acceleration, &deceleration);
+    API->mrb_get_args(l, "iii", &interval, &acceleration, &deceleration);
 
     enet_peer_throttle_configure(peer, interval, acceleration, deceleration);
     return mrb_nil_value();
@@ -741,7 +691,7 @@ int peer_last_round_trip_time(mrb_state *l) {
 
 // https://leafo.net/lua-enet/#peerping_intervalinterval
 mrb_value peer_ping_interval(mrb_state *l, mrb_value self) {
-    ENetPeer *peer = check_peer(l, 1);
+    ENetPeer *peer = get_enet_peer(1);
 
     enet_uint32 interval;
         API->mrb_get_args(l, "i", &interval);
@@ -753,7 +703,7 @@ mrb_value peer_ping_interval(mrb_state *l, mrb_value self) {
 }
 
 mrb_value peer_timeout(mrb_state *l, mrb_value self) {
-    ENetPeer *peer = check_peer(l, 1);
+    ENetPeer *peer = get_enet_peer(1);
 
     enet_uint32 timeout_limit, timeout_minimum, timeout_maximum;
 
@@ -775,7 +725,7 @@ mrb_value peer_timeout(mrb_state *l, mrb_value self) {
 
 //TODO: accept optional value like in https://leafo.net/lua-enet/#peerdisconnectdata
 mrb_value peer_disconnect(mrb_state *l, mrb_value self) {
-    ENetPeer *peer = check_peer(l, 1);
+    ENetPeer *peer = get_enet_peer(1);
 
     //enet_uint32 data = lua_gettop(l) > 1 ? (int) luaL_checknumber(l, 2) : 0;
     enet_uint32 data = 0;
@@ -785,7 +735,7 @@ mrb_value peer_disconnect(mrb_state *l, mrb_value self) {
 
 //TODO: accept optional value like in https://leafo.net/lua-enet/#peerdisconnect_nowdata
 mrb_value peer_disconnect_now(mrb_state *l, mrb_value self) {
-    ENetPeer *peer = check_peer(l, 1);
+    ENetPeer *peer = get_enet_peer(1);
 
     //enet_uint32 data = lua_gettop(l) > 1 ? (int) luaL_checknumber(l, 2) : 0;
     enet_uint32 data = 0;
@@ -795,7 +745,7 @@ mrb_value peer_disconnect_now(mrb_state *l, mrb_value self) {
 
 //TODO: accept optional value like in https://leafo.net/lua-enet/#peerdisconnect_laterdata
 mrb_value peer_disconnect_later(mrb_state *l, mrb_value self) {
-    ENetPeer *peer = check_peer(l, 1);
+    ENetPeer *peer = get_enet_peer(1);
 
     //enet_uint32 data = lua_gettop(l) > 1 ? (int) luaL_checknumber(l, 2) : 0;
     enet_uint32 data = 0;
@@ -804,7 +754,7 @@ mrb_value peer_disconnect_later(mrb_state *l, mrb_value self) {
 }
 
 mrb_value peer_index(mrb_state *l, mrb_value self) {
-    ENetPeer *peer = check_peer(l, 1);
+    ENetPeer *peer = get_enet_peer(1);
 
     size_t peer_index = find_peer_index (l, peer->host, peer);
 
@@ -812,7 +762,7 @@ mrb_value peer_index(mrb_state *l, mrb_value self) {
 }
 
 mrb_value peer_state(mrb_state *l, mrb_value self) {
-    ENetPeer *peer = check_peer(l, 1);
+    ENetPeer *peer = get_enet_peer(1);
 
     switch (peer->state) {
         case (ENET_PEER_STATE_DISCONNECTED):
@@ -862,7 +812,7 @@ mrb_value peer_state(mrb_state *l, mrb_value self) {
 }
 
 mrb_value peer_connect_id(mrb_state *l, mrb_value self) {
-    ENetPeer *peer = check_peer(l, 1);
+    ENetPeer *peer = get_enet_peer(1);
 
     //lua_pushinteger (l, peer->connectID);
     return API->mrb_int_value(l, peer->connectID);
@@ -870,7 +820,7 @@ mrb_value peer_connect_id(mrb_state *l, mrb_value self) {
 
 
 mrb_value peer_reset(mrb_state *l, mrb_value self) {
-    ENetPeer *peer = check_peer(l, 1);
+    ENetPeer *peer = get_enet_peer(1);
     enet_peer_reset(peer);
 
     return mrb_nil_value();
@@ -936,7 +886,7 @@ mrb_value peer_send(mrb_state *l, mrb_value self) {
                                               size,
                                               flag);
 
-    ENetPeer *peer = check_peer(l, peer_id);
+    ENetPeer *peer = get_enet_peer(peer_id);
 
     // printf("sending, channel_id=%d\n", channel_id);
     int ret = enet_peer_send(peer, channel_id, packet);

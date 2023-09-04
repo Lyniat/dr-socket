@@ -9,6 +9,11 @@
 
 namespace lyniat::socket::enet {
 
+    typedef struct socket_peer_t {
+        ENetPeer *peer;
+        bool authorized;
+    } socket_peer_t;
+
     typedef struct socket_event_t {
         ENetPeer *peer;
         mrb_value data;
@@ -17,7 +22,7 @@ namespace lyniat::socket::enet {
     extern ENetHost *socket_enet_host;
     extern ENetPeer *socket_enet_peer;
 
-    extern std::map<uintptr_t, ENetPeer *> socket_enet_peers;
+    extern std::map<uint64_t, socket_peer_t> socket_enet_peers;
     extern std::vector<socket_event_t> socket_enet_events;
 
     extern mrb_value socket_event_receive;
@@ -56,11 +61,9 @@ namespace lyniat::socket::enet {
 
     size_t find_peer_index(mrb_state *l, ENetHost *enet_host, ENetPeer *peer);
 
-    uintptr_t compute_peer_key(mrb_state *L, ENetPeer *peer);
+    uint64_t compute_peer_key(ENetPeer *peer);
 
-    void push_peer_key(mrb_state *L, uintptr_t key);
-
-    uintptr_t push_peer(mrb_state *l, ENetPeer *peer);
+    uint64_t push_peer(ENetPeer *peer);
 
     mrb_value push_event(mrb_state *l, ENetEvent *event);
 
