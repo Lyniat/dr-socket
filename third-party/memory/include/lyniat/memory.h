@@ -43,7 +43,9 @@ extern "C" {
 #define MALLOC(size) lyniat_memory_debug_malloc(size, DEBUG_FILENAME)
 #define CALLOC(num, size) lyniat_memory_debug_calloc(num, size, DEBUG_FILENAME)
 #define REALLOC(ptr, new_size) lyniat_memory_debug_realloc(ptr, new_size, DEBUG_FILENAME)
+#define STRDUP(ptr) lyniat_memory_debug_strdup(ptr, DEBUG_FILENAME)
 #define MALLOC_CYCLE(size) lyniat_memory_debug_malloc_cycle(size, DEBUG_FILENAME)
+#define STRDUP_CYCLE(ptr) lyniat_memory_debug_strdup_cycle(ptr, DEBUG_FILENAME)
 #define FREE(ptr) lyniat_memory_debug_free(ptr, DEBUG_FILENAME)
 #define FREE_CYCLE lyniat_memory_debug_free_cycle_memory(DEBUG_FILENAME);
 
@@ -51,7 +53,9 @@ extern "C" {
 #define MALLOC(size) malloc(size)
 #define CALLOC(num, size) calloc(num, size)
 #define REALLOC(ptr, new_size) realloc(ptr, new_size)
+#define STRDUP(ptr) strdup(ptr)
 #define MALLOC_CYCLE(size) lyniat_memory_malloc_cycle(size)
+#define STRDUP_CYCLE(ptr) lyniat_memory_strdup_cycle(ptr)
 #define FREE(ptr) free(ptr)
 #define FREE_CYCLE lyniat_memory_free_cycle_memory();
 #endif
@@ -62,9 +66,15 @@ void *lyniat_memory_debug_calloc(size_t num, size_t size, const char *info);
 
 void *lyniat_memory_debug_realloc(void *ptr, size_t new_size, const char *info);
 
+const char *lyniat_memory_debug_strdup(const char* ptr, const char *info);
+
 void *lyniat_memory_malloc_cycle(size_t size);
 
+const char *lyniat_memory_strdup_cycle(const char* ptr);
+
 void *lyniat_memory_debug_malloc_cycle(size_t size, const char *info);
+
+const char *lyniat_memory_debug_strdup_cycle(const char* ptr, const char *info);
 
 void lyniat_memory_debug_free(void *ptr, const char *info);
 

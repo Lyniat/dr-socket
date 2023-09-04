@@ -73,12 +73,6 @@ bool cext_is_undef(mrb_state *mrb, mrb_value value){
     return mrb_type(value) == MRB_TT_UNDEF;
 }
 
-bool cext_is_valid_type(mrb_state *mrb, mrb_value value){
-    mrb_vtype type = mrb_type(value);
-    return (type == MRB_TT_STRING || type == MRB_TT_INTEGER || type == MRB_TT_HASH || type == MRB_TT_ARRAY ||
-    type == MRB_TT_FLOAT || type == MRB_TT_SYMBOL);
-}
-
 mrb_int cext_hash_get_int_default(mrb_state *mrb, mrb_value hash, const char* key, mrb_int def){
     auto value = API->mrb_hash_get(mrb, hash, cext_key(mrb, key));
     if(cext_is_int(mrb, value)){

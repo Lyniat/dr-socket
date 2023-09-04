@@ -67,6 +67,8 @@ namespace lyniat::socket::enet {
 
 #define ENET_ALIGNOF(x) alignof(x)
 
+socket_type_t current_type = NONE;
+
 ENetHost* socket_enet_host;
 ENetPeer* socket_enet_peer;
 

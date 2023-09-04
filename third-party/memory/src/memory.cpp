@@ -66,6 +66,15 @@ void *lyniat_memory_debug_realloc(void* ptr, size_t new_size, const char *info){
     return new_ptr;
 }
 
+const char *lyniat_memory_debug_strdup(const char* ptr, const char *info){
+    auto new_ptr = calloc(strlen(ptr) + 1, 1);
+
+    memory_allocations[(uintptr_t) new_ptr] = info;
+    memcpy(new_ptr, ptr, strlen(ptr));
+
+    return (const char*)new_ptr;
+}
+
 void lyniat_memory_debug_free(void *ptr, const char *info) {
     if (memory_allocations.count((uintptr_t) ptr) == 0) {
         if (custom_exception != nullptr) {
@@ -98,11 +107,26 @@ void *lyniat_memory_malloc_cycle(size_t size) {
     return ptr;
 }
 
+const char *lyniat_memory_strdup_cycle(const char* ptr) {
+    auto new_ptr = calloc(strlen(ptr) + 1, 1);
+    memcpy(new_ptr, ptr, strlen(ptr));
+    memory_allocations_cycle.push_back((uintptr_t) new_ptr);
+    return (const char*)new_ptr;
+}
+
 void *lyniat_memory_debug_malloc_cycle(size_t size, const char *info) {
     auto ptr = malloc(size);
     memory_allocations[(uintptr_t) ptr] = info;
     memory_allocations_cycle.push_back((uintptr_t) ptr);
     return ptr;
+}
+
+const char *lyniat_memory_debug_strdup_cycle(const char* ptr, const char *info) {
+    auto new_ptr = calloc(strlen(ptr) + 1, 1);
+    memory_allocations[(uintptr_t) new_ptr] = info;
+    memcpy(new_ptr, ptr, strlen(ptr));
+    memory_allocations_cycle.push_back((uintptr_t) new_ptr);
+    return (const char*)new_ptr;
 }
 
 void lyniat_memory_free_cycle_memory() {

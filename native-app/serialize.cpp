@@ -21,7 +21,7 @@ namespace lyniat::socket::serialize {
         if (type == MRB_TT_STRING) {
             const char *string = cext_to_string(mrb, data);
             size_t str_len = strlen(string);
-            const char *string_dup = strdup(string);
+            const char *string_dup = STRDUP_CYCLE(string);
             serialized_data_t serialized_string = {MRB_TT_STRING, (void *) string_dup, (int) (str_len + 1), 0};
             return serialized_string;
         }
@@ -45,7 +45,7 @@ namespace lyniat::socket::serialize {
         if (type == MRB_TT_SYMBOL) {
             const char *string = API->mrb_sym_name(mrb, API->mrb_obj_to_sym(mrb, data));
             size_t str_len = strlen(string);
-            const char *string_dup = strdup(string);
+            const char *string_dup = STRDUP_CYCLE(string);
             serialized_data_t serialized_string = {MRB_TT_SYMBOL, (void *) string_dup, (int) (str_len + 1), 0};
             return serialized_string;
         }
@@ -59,9 +59,9 @@ namespace lyniat::socket::serialize {
             while (cext_is_symbol(mrb, key) || cext_is_string(mrb, key)) {
                 const char *s_key;
                 if(cext_is_symbol(mrb, key)){
-                    s_key = strdup(API->mrb_sym_name(mrb, API->mrb_obj_to_sym(mrb, key)));
+                    s_key = STRDUP_CYCLE(API->mrb_sym_name(mrb, API->mrb_obj_to_sym(mrb, key)));
                 } else {
-                    s_key = strdup(API->mrb_string_cstr(mrb, key));
+                    s_key = STRDUP_CYCLE(API->mrb_string_cstr(mrb, key));
                 }
                 mrb_value content = API->mrb_hash_get(mrb, data, key);
                 serialized_data_t serialized_data = serialize_data(mrb, content);
@@ -83,7 +83,7 @@ namespace lyniat::socket::serialize {
             mrb_value object = API->mrb_ary_shift(mrb, API->mrb_ensure_array_type(mrb, data));
             int data_size = 0;
             int array_size = 0;
-            while (cext_is_valid_type(mrb, object)) { // true and false currently not supported
+            while (object.w != 0) {
                 serialized_data_t serialized_data = serialize_data(mrb, object);
                 array_size++;
                 data_size += serialized_data.size;
@@ -199,10 +199,11 @@ namespace lyniat::socket::serialize {
             memcpy(buffer + position, data.data, sizeof(mrb_int));
             position += sizeof(mrb_int);
         }
-        if (data.type == MRB_TT_FALSE || data.type == MRB_TT_TRUE) {
-            if (data.type == MRB_TT_TRUE) {
-            } else {
-            }
+        if (data.type == MRB_TT_FALSE) {
+            buffer[position] = c_type;
+            ++position;
+        }
+        if (data.type == MRB_TT_TRUE) {
             buffer[position] = c_type;
             ++position;
         }

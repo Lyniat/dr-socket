@@ -9,6 +9,12 @@
 
 namespace lyniat::socket::enet {
 
+    typedef enum socket_type_t {
+        NONE,
+        CLIENT,
+        SERVER
+    } socket_type_t;
+
     typedef struct socket_peer_t {
         ENetPeer *peer;
         bool authorized;
@@ -18,6 +24,8 @@ namespace lyniat::socket::enet {
         ENetPeer *peer;
         mrb_value data;
     } socket_event_t;
+
+    extern socket_type_t current_type;
 
     extern ENetHost *socket_enet_host;
     extern ENetPeer *socket_enet_peer;
