@@ -13,25 +13,26 @@ Additionally required for building:
 - Python 3
 
 ## Windows
+- [read this](readme/msys2.md]) if you want to use MSYS2
 - [MingW](https://winlibs.com) (tested on *GCC 13.1.0 (with POSIX threads) + LLVM/Clang/LLD/LLDB 16.0.5 + MinGW-w64 11.0.0 (UCRT) - release 5*)
-Run ``build-windows.bat --target windows``.
+- Run ``build-windows.bat --target windows``.
 
 ## macOS
-Run ``build-unix.sh --target macos``.
-Add ``-fat-binary`` if you want to create a fat binary for both x86_64 and amd64.
+- Run ``build-unix.sh --target macos``.
+- Add ``-fat-binary`` if you want to create a fat binary for both x86_64 and amd64.
 
 ## Linux
-Run ``build-unix.sh --target linux``.
+- Run ``build-unix.sh --target linux``.
 
 ## Android
 ### Windows
-Run ``build-windows.bat --target android``.
+- Run ``build-windows.bat --target android``.
 
 ### macOS / Linux
-Run ``build-unix.sh --target android``.
+- Run ``build-unix.sh --target android``.
 
 ## iOS
-Run ``build-unix.sh --target ios``.
+- Run ``build-unix.sh --target ios``.
 
 ## Raspberry Pi
 WIP
