@@ -349,7 +349,7 @@ mrb_value host_create(mrb_state *l, mrb_value self) {
     ENetAddress address;
 
     mrb_value h;
-        API->mrb_get_args(l, "H", &h);
+    API->mrb_get_args(l, "H", &h);
 
     auto rb_address = cext_hash_get(l, h, "address");
     const char* str_address = "";
@@ -427,8 +427,6 @@ mrb_value host_service(mrb_state *l, mrb_value self) {
     }
     ENetEvent event;
     int timeout = 0, out;
-
-    API->mrb_get_args(l, "i", &timeout);
 
     out = enet_host_service(host, &event, timeout);
     if (out == 0){
@@ -964,7 +962,7 @@ void socket_open_enet(mrb_state* state) {
     // host
     define_function(host_create, 1);
     define_function(host_connect, 1);
-    define_function(host_service, 1);
+    define_function(host_service, 0);
     define_function(host_check_events, 0);
     undefine_function(enet_host_compress_with_range_coder, 0); //TODO: implement this
     define_function(host_flush, 0);

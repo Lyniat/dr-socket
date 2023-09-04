@@ -2,16 +2,16 @@ $gtk.ffi_misc.gtk_dlopen("socket")
 include FFI::DRSocket
 
 def init_client args
-    host = $socket.raw.host_create({})
-    server = $socket.raw.host_connect({address: "localhost:6789"})
+    $socket.raw.host_create({})
+    $socket.raw.host_connect({address: "localhost:6789"})
 end
 
 def init_server args
-    host = $socket.raw.host_create({address: "localhost:6789"})
+    $socket.raw.host_create({address: "localhost:6789"})
 end
 
 def update_server args
-    event = $socket.raw.host_service(0)
+    event = $socket.raw.host_service
     while event
         puts event
         if event.type == :s_event_receive
@@ -23,12 +23,12 @@ def update_server args
           puts("disconnected.")
         end
 
-        event = $socket.raw.host_service(0)
+        event = $socket.raw.host_service
     end
 end
 
 def update_client args
-    event = $socket.raw.host_service(0)
+    event = $socket.raw.host_service
     while event
         puts event.type
         if event.type == :s_event_receive
@@ -41,7 +41,7 @@ def update_client args
           puts("disconnected.")
         end
 
-        event = $socket.raw.host_service(0)
+        event = $socket.raw.host_service
     end
 end
 
