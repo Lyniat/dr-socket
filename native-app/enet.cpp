@@ -45,6 +45,7 @@
 #include "serialize.h"
 #include "print.h"
 #include "buffer.h"
+#include "test.h"
 
 /*
 #define check_host(l, idx)\
@@ -992,5 +993,6 @@ void socket_open_enet(mrb_state* state) {
                                             return mrb_nil_value();
                                         }}, MRB_ARGS_REQ(0));
 
+    register_test_functions(state, module_socket);
 }
 }

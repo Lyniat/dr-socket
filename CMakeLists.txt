@@ -107,6 +107,8 @@ add_library(${THIS_PROJECT_NAME} SHARED
         native-app/serialize.cpp
         native-app/print.h
         native-app/print.cpp
+        native-app/test.h
+        native-app/test.cpp
         native-app/socket.rb.h
         )
 
