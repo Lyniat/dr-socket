@@ -46,6 +46,7 @@
 #include "print.h"
 #include "buffer.h"
 #include "test.h"
+#include "file.h"
 
 /*
 #define check_host(l, idx)\
@@ -58,12 +59,22 @@
 using namespace lyniat::socket;
 namespace lyniat::socket::enet {
 
+#ifdef DEBUG
+#define define_debug_function(f, name, args) \
+    API->mrb_define_module_function(state, module, name, f, MRB_ARGS_REQ(args))
+#else
+#define define_debug_function(f, name, args) \
+    API->define_debug_function(state, module, name, {[](mrb_state *mrb, mrb_value self) { \
+        print::print(mrb, print::PRINT_ERROR, "Function {} is only available in Debug build.", #f); \
+        return mrb_nil_value(); \
+    }}, MRB_ARGS_REQ(args))
+#endif
 #define define_function(f, args) \
     API->mrb_define_module_function(state, module, #f, f, MRB_ARGS_REQ(args))
 
 #define undefine_function(f, args) \
     API->mrb_define_module_function(state, module, #f, {[](mrb_state *mrb, mrb_value self) { \
-        print::print(mrb, print::PRINT_ERROR, "Function {}, is currently not implemented. Sorry :(", #f); \
+        print::print(mrb, print::PRINT_ERROR, "Function {} is currently not implemented. Sorry :(", #f); \
         return mrb_nil_value(); \
     }}, MRB_ARGS_REQ(args))
 
@@ -945,6 +956,9 @@ void socket_open_enet(mrb_state* state) {
     undefine_function(last_round_trip_time, 1); //TODO: implement this
     define_function(peer_throttle_configure, 3);
     define_function(peer_timeout, 3);
+
+    // debug
+    define_debug_function(file::debug_serialized_to_file, "__debug_save", 1);
 
     API->mrb_define_module_function(state, module_socket, "get_build_info", {[](mrb_state *mrb, mrb_value self) {
         auto enet_version = linked_version(mrb, self);

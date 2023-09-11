@@ -3,7 +3,7 @@ def hash_diff(a, b)
     a.reject { |k, v| b[k] == v }.merge!(b.reject { |k, _v| a.key?(k) })
 end
 
-def test_serialize args, assert
+def get_test_data
     test_data = {
         "this_is_data?" => true,
         letters: [
@@ -31,7 +31,10 @@ def test_serialize args, assert
         },
         "end_of_data" => true,
     }
+end
 
+def test_serialize args, assert
+    test_data = get_test_data
     data = $socket.__test_serialize(test_data)
     result = $socket.__test_deserialize(data)
     diff = hash_diff(test_data, result)
