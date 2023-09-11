@@ -64,7 +64,7 @@ namespace lyniat::socket::enet {
     API->mrb_define_module_function(state, module, name, f, MRB_ARGS_REQ(args))
 #else
 #define define_debug_function(f, name, args) \
-    API->define_debug_function(state, module, name, {[](mrb_state *mrb, mrb_value self) { \
+    API->mrb_define_module_function(state, module, name, {[](mrb_state *mrb, mrb_value self) { \
         print::print(mrb, print::PRINT_ERROR, "Function {} is only available in Debug build.", #f); \
         return mrb_nil_value(); \
     }}, MRB_ARGS_REQ(args))
@@ -964,7 +964,7 @@ void socket_open_enet(mrb_state* state) {
 #ifdef DEBUG
                                             lyniat_memory_check_allocated_memory();
 #else
-                                            ruby_print(mrb, (char*)"check_allocated_memory is only available in a Debug build.");
+                                            print::print(mrb, "check_allocated_memory is only available in a Debug build.");
 #endif
                                             return mrb_nil_value();
                                         }}, MRB_ARGS_REQ(0));
