@@ -942,7 +942,6 @@ void socket_open_enet(mrb_state* state) {
         auto meta_type = (const char *) META_TYPE;
         auto meta_git_hash = (const char *) META_GIT_HASH;
         auto meta_git_branch = (const char *) META_GIT_BRANCH;
-        auto meta_timestamp = (const char *) META_TIMESTAMP;
         auto meta_compiler_id = (const char *) META_COMPILER_ID;
         auto meta_compiler_version = (const char *) META_COMPILER_VERSION;
 
@@ -951,7 +950,6 @@ void socket_open_enet(mrb_state* state) {
         cext_hash_set_kstr(mrb, build_information, "build_type", API->mrb_str_new_cstr(mrb, meta_type));
         cext_hash_set_kstr(mrb, build_information, "git_hash", API->mrb_str_new_cstr(mrb, meta_git_hash));
         cext_hash_set_kstr(mrb, build_information, "git_branch", API->mrb_str_new_cstr(mrb, meta_git_branch));
-        cext_hash_set_kstr(mrb, build_information, "build_time", API->mrb_str_new_cstr(mrb, meta_timestamp));
 
         auto compiler = API->mrb_hash_new(mrb);
         cext_hash_set_kstr(mrb, compiler, "id", API->mrb_str_new_cstr(mrb, meta_compiler_id));

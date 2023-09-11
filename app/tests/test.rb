@@ -2,5 +2,6 @@
 
 require "app/tests/serialize.rb"
 
+puts $socket.get_build_info
 puts "running tests"
 $gtk.tests.start

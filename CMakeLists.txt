@@ -51,7 +51,6 @@ ensure_python_module("pathlib" "pathlib")
 ensure_python_module("psutil" "psutil")
 
 include(tools/cmake/platform.cmake)
-include(tools/cmake/meta.cmake)
 
 get_platform()
 get_property(THIRD_PARTY_TYPE GLOBAL PROPERTY THIRD_PARTY_TYPE)
@@ -271,16 +270,25 @@ else()
     add_definitions(-DMETA_TYPE="Other")
 endif()
 
+# add some helpful information to library
+# get the latest commit hash of the working branch git branch
+execute_process(
+        COMMAND git log -1 --format=%H
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        OUTPUT_VARIABLE META_GIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
 
-get_property(META_GIT_BRANCH GLOBAL PROPERTY META_GIT_BRANCH)
-get_property(META_GIT_HASH GLOBAL PROPERTY META_GIT_HASH)
-get_property(META_TIMESTAMP GLOBAL PROPERTY META_TIMESTAMP)
-get_property(META_COMPILER_ID GLOBAL PROPERTY META_COMPILER_ID)
-get_property(META_COMPILER_VERSION GLOBAL PROPERTY META_COMPILER_VERSION)
+# get git branch name
+execute_process(
+        COMMAND git branch --show-current
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        OUTPUT_VARIABLE META_GIT_BRANCH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
 
 add_definitions(-DMETA_PLATFORM=${META_PLATFORM})
 add_definitions(-DMETA_GIT_BRANCH="${META_GIT_BRANCH}")
 add_definitions(-DMETA_GIT_HASH="${META_GIT_HASH}")
-add_definitions(-DMETA_TIMESTAMP="${META_TIMESTAMP}")
 add_definitions(-DMETA_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}")
 add_definitions(-DMETA_COMPILER_VERSION="${CMAKE_CXX_COMPILER_VERSION}")
