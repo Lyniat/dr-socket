@@ -27,14 +27,12 @@ mrb_value cext_key_sym(mrb_state *mrb, const char* str){
 }
 
 mrb_value cext_hash_get(mrb_state *mrb, mrb_value hash, const char* key){
-    /*
     auto result_with_str = API->mrb_hash_get(mrb, hash, cext_key(mrb, key));
     if(result_with_str.w == 0){
         return API->mrb_hash_get(mrb, hash, cext_key_sym(mrb, key));
     }
     return result_with_str;
-     */
-    return API->mrb_hash_get(mrb, hash, cext_key_sym(mrb, key));
+    //return API->mrb_hash_get(mrb, hash, cext_key_sym(mrb, key));
 }
 
 mrb_int cext_hash_get_int(mrb_state *mrb, mrb_value hash, const char* key){
@@ -57,10 +55,17 @@ mrb_value cext_hash_get_save_hash(mrb_state *mrb, mrb_value hash, const char* ke
     return API->mrb_hash_new(mrb);
 }
 
-void cext_hash_set(mrb_state *mrb, mrb_value hash, const char* key, mrb_value val){
-    //API->mrb_hash_set(mrb, hash, API->mrb_str_new_cstr(mrb, key), val);
-    API->mrb_hash_set(mrb, hash, cext_key_sym(mrb, key), val);
+void cext_hash_set_kstr(mrb_state *mrb, mrb_value hash, const char* key, mrb_value val){
+    API->mrb_hash_set(mrb, hash, API->mrb_str_new_cstr(mrb, key), val);
+    //API->mrb_hash_set(mrb, hash, cext_key_sym(mrb, key), val);
     //API->mrb_hash_set(mrb, hash, API->mrb_(mrb, API->mrb_str_new_cstr(mrb, key)), val);
+}
+
+void cext_hash_set_ksym(mrb_state *mrb, mrb_value hash, const char* key, mrb_value val){
+    //API->mrb_hash_set(mrb, hash, API->mrb_str_new_cstr(mrb, key), val);
+    //API->mrb_hash_set(mrb, hash, cext_key_sym(mrb, key), val);
+    //API->mrb_hash_set(mrb, hash, API->mrb_(mrb, API->mrb_str_new_cstr(mrb, key)), val);
+    API->mrb_hash_set(mrb, hash, cext_key_sym(mrb, key), val);
 }
 
 bool cext_is_string(mrb_state *mrb, mrb_value value){

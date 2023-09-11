@@ -7,23 +7,25 @@
 
 namespace lyniat::socket::serialize {
 
-    typedef struct serialized_data_t {
-        mrb_vtype type;
-        void *data;
-        int size;
-        int amount;
-    } serialized_data_t;
+    typedef unsigned short int st_counter_t;
 
-    typedef struct serialized_hash_t {
-        const char *key;
-        serialized_data_t data;
-    } serialized_hash_t;
+    enum serialized_type : unsigned char {
+        ST_FALSE = 0,
+        ST_TRUE,
+        ST_INT,
+        ST_FLOAT,
+        ST_SYMBOL,
+        ST_HASH,
+        ST_ARRAY,
+        ST_STRING,
+        ST_UNDEF
+    };
 
-    serialized_data_t serialize_data(mrb_state *mrb, mrb_value data);
+    void serialize_data(buffer::BinaryBuffer *binary_buffer, mrb_state *mrb, mrb_value data);
 
-    mrb_value deserialize_data(mrb_state *mrb, const char *buffer, int size, int *position);
+    mrb_value deserialize_data(buffer::BinaryBuffer *binary_buffer, mrb_state *mrb);
 
-    void serialize_data_to_buffer(buffer::BinaryBuffer *binary_buffer, serialized_data_t data);
+    serialized_type get_st(mrb_value data);
 
 }
 

@@ -7,10 +7,37 @@ namespace lyniat::socket::buffer {
         ptr = nullptr;
         b_size = 0;
         b_length = 0;
+        current_pos = 0;
+        current_read_pos = 0;
+        must_free = true;
+        read_only = false;
+    }
+
+    BinaryBuffer::BinaryBuffer(void* new_ptr, unsigned int size, bool copy){
+        ptr = nullptr;
+        b_size = 0;
+        b_length = 0;
+        current_pos = 0;
+        current_read_pos = 0;
+        read_only = true;
+        if(copy){
+            ptr = MALLOC(size);
+            memcpy(ptr, new_ptr, size);
+            b_size = size;
+            b_length = size;
+            must_free = true;
+        }else{
+            ptr = new_ptr;
+            b_size = size;
+            b_length = size;
+            must_free = false;
+        }
     }
 
     BinaryBuffer::~BinaryBuffer() {
-        FREE(ptr);
+        if(must_free){
+            FREE(ptr);
+        }
     }
 
     /*
@@ -27,7 +54,18 @@ namespace lyniat::socket::buffer {
         return b_size;
     }
 
-    void BinaryBuffer::AppendData(void *data, int size) {
+    bool BinaryBuffer::ReadOnly(){
+        return read_only;
+    }
+
+    unsigned int BinaryBuffer::CurrentPos(){
+        return current_pos;
+    }
+
+    void BinaryBuffer::AppendData(void *data, unsigned int size) {
+        if(read_only){
+            return;
+        }
         if (b_size + size > b_length){
             if(b_length == 0){
                 const unsigned int MiB = 1024 * 1024;
@@ -45,5 +83,22 @@ namespace lyniat::socket::buffer {
         }
         memcpy((char*)ptr + b_size, data, size);
         b_size = b_size + size;
+        current_pos += size;
+    }
+
+    void BinaryBuffer::SetDataAt(unsigned int pos, void *data, unsigned int size){
+        if(read_only){
+            return;
+        }
+        if(pos + size < b_size){
+            memcpy((char*)ptr + pos, data, size);
+        }
+    }
+
+    void BinaryBuffer::ReadData(void *data, unsigned int size) {
+        if(current_read_pos + size <= b_size){
+            memcpy(data, (char*)ptr + current_read_pos, size);
+            current_read_pos += size;
+        }
     }
 }

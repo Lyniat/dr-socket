@@ -1,239 +1,192 @@
 #include "serialize.h"
 #include "help.h"
 #include "api.h"
-#include <vector>
 #include <lyniat/memory.h>
 
 namespace lyniat::socket::serialize {
 
-    serialized_data_t serialize_data(mrb_state *mrb, mrb_value data) {
+    serialized_type get_st(mrb_value data){
         mrb_vtype type = mrb_type(data);
-        if (type == MRB_TT_FALSE) {
-            serialized_data_t serialized_bool = {MRB_TT_FALSE, nullptr, 0, 0};
-            return serialized_bool;
+        switch (type) {
+            case MRB_TT_FALSE:
+                return ST_FALSE;
+            case MRB_TT_TRUE:
+                return ST_TRUE;
+            case MRB_TT_STRING:
+                return ST_STRING;
+            case MRB_TT_INTEGER:
+                return ST_INT;
+            case MRB_TT_FLOAT:
+                return ST_FLOAT;
+            case MRB_TT_SYMBOL:
+                return ST_SYMBOL;
+            case MRB_TT_HASH:
+                return ST_HASH;
+            case MRB_TT_ARRAY:
+                return ST_ARRAY;
+            default:
+                return ST_UNDEF;
         }
-
-        if (type == MRB_TT_TRUE) {
-            serialized_data_t serialized_bool = {MRB_TT_TRUE, nullptr, 0, 0};
-            return serialized_bool;
-        }
-
-        if (type == MRB_TT_STRING) {
-            const char *string = cext_to_string(mrb, data);
-            size_t str_len = strlen(string);
-            const char *string_dup = STRDUP_CYCLE(string);
-            serialized_data_t serialized_string = {MRB_TT_STRING, (void *) string_dup, (int) (str_len + 1), 0};
-            return serialized_string;
-        }
-
-        if (type == MRB_TT_INTEGER) {
-            mrb_int number = cext_to_int(mrb, data);
-            void *number_copy = MALLOC_CYCLE(sizeof(mrb_int));
-            memcpy(number_copy, &number, sizeof(mrb_int));
-            serialized_data_t serialized_int = {MRB_TT_INTEGER, number_copy, sizeof(mrb_int), 0};
-            return serialized_int;
-        }
-
-        if (type == MRB_TT_FLOAT) {
-            mrb_float number = cext_to_float(mrb, data);
-            void *number_copy = MALLOC_CYCLE(sizeof(mrb_float));
-            memcpy(number_copy, &number, sizeof(mrb_float));
-            serialized_data_t serialized_float = {MRB_TT_FLOAT, number_copy, sizeof(mrb_float), 0};
-            return serialized_float;
-        }
-
-        if (type == MRB_TT_SYMBOL) {
-            const char *string = API->mrb_sym_name(mrb, API->mrb_obj_to_sym(mrb, data));
-            size_t str_len = strlen(string);
-            const char *string_dup = STRDUP_CYCLE(string);
-            serialized_data_t serialized_string = {MRB_TT_SYMBOL, (void *) string_dup, (int) (str_len + 1), 0};
-            return serialized_string;
-        }
-
-        if (type == MRB_TT_HASH) {
-            mrb_value keys = API->mrb_hash_keys(mrb, data);
-            mrb_value key = API->mrb_ary_shift(mrb, API->mrb_ensure_array_type(mrb, keys));
-            std::vector<serialized_hash_t> data_vector;
-            int data_size = 0;
-            int hash_size = 0;
-            while (cext_is_symbol(mrb, key) || cext_is_string(mrb, key)) {
-                const char *s_key;
-                if(cext_is_symbol(mrb, key)){
-                    s_key = STRDUP_CYCLE(API->mrb_sym_name(mrb, API->mrb_obj_to_sym(mrb, key)));
-                } else {
-                    s_key = STRDUP_CYCLE(API->mrb_string_cstr(mrb, key));
-                }
-                mrb_value content = API->mrb_hash_get(mrb, data, key);
-                serialized_data_t serialized_data = serialize_data(mrb, content);
-                serialized_hash_t serialized_hash_entry = {s_key, serialized_data};
-                hash_size++;
-                data_size += serialized_data.size;
-                data_vector.push_back(serialized_hash_entry);
-                key = API->mrb_ary_shift(mrb, API->mrb_ensure_array_type(mrb, keys));
-            }
-            void *raw_data = data_vector.data();
-            void *raw_data_copy = MALLOC_CYCLE(hash_size * sizeof(serialized_hash_t));
-            memcpy(raw_data_copy, raw_data, hash_size * sizeof(serialized_hash_t));
-            serialized_data_t serialized_hash = {MRB_TT_HASH, raw_data_copy, data_size, hash_size};
-            return serialized_hash;
-        }
-
-        if (type == MRB_TT_ARRAY) {
-            std::vector<serialized_data_t> data_vector;
-            mrb_value object = API->mrb_ary_shift(mrb, API->mrb_ensure_array_type(mrb, data));
-            int data_size = 0;
-            int array_size = 0;
-            while (object.w != 0) {
-                serialized_data_t serialized_data = serialize_data(mrb, object);
-                array_size++;
-                data_size += serialized_data.size;
-                data_vector.push_back(serialized_data);
-                object = API->mrb_ary_shift(mrb, API->mrb_ensure_array_type(mrb, data));
-            }
-            void *raw_data = data_vector.data();
-            void *raw_data_copy = MALLOC_CYCLE(array_size * sizeof(serialized_data_t));
-            memcpy(raw_data_copy, raw_data, array_size * sizeof(serialized_data_t));
-            serialized_data_t serialized_array = {MRB_TT_ARRAY, raw_data_copy, data_size, array_size};
-            return serialized_array;
-        }
-
-        serialized_data_t serialized_undef = {MRB_TT_UNDEF, (void *) nullptr, 0};
-        return serialized_undef;
     }
 
-    mrb_value deserialize_data(mrb_state *mrb, const char *buffer, int size, int *position) {
-        char c_type = buffer[*position];
-        mrb_vtype type = (mrb_vtype) c_type;
-        if (type == MRB_TT_FALSE) {
-            ++*position;
+    void serialize_data(buffer::BinaryBuffer *binary_buffer, mrb_state *mrb, mrb_value data) {
+        auto stype = get_st(data);
+        auto type = (unsigned char)stype;
+        if(stype == ST_FALSE || stype == ST_TRUE) {
+            binary_buffer->Append(type);
+        }
+
+        else if(stype == ST_INT){
+            mrb_int number = cext_to_int(mrb, data);
+            binary_buffer->Append(type);
+            binary_buffer->Append(number);
+        }
+
+        else if(stype == ST_FLOAT){
+            mrb_float number = cext_to_float(mrb, data);
+            binary_buffer->Append(type);
+            binary_buffer->Append(number);
+        }
+
+        else if(stype == ST_STRING){
+            const char *string = cext_to_string(mrb, data);
+            st_counter_t str_len = strlen(string) + 1;
+            binary_buffer->Append(type);
+            binary_buffer->Append(str_len);
+            binary_buffer->Append((void*)string, str_len);
+        }
+
+        else if(stype == ST_SYMBOL){
+            const char *string = API->mrb_sym_name(mrb, API->mrb_obj_to_sym(mrb, data));
+            st_counter_t str_len = strlen(string) + 1;
+            binary_buffer->Append(type);
+            binary_buffer->Append(str_len);
+            binary_buffer->Append((void*)string, str_len);
+        }
+
+        else if(stype == ST_ARRAY){
+            binary_buffer->Append(type);
+            auto current_pos = binary_buffer->CurrentPos();
+            binary_buffer->Append((st_counter_t)0); // array_size
+            mrb_value object = API->mrb_ary_shift(mrb, API->mrb_ensure_array_type(mrb, data));
+            st_counter_t array_size = 0;
+            while (object.w != 0) {
+                serialize_data(binary_buffer, mrb, object);
+                array_size++;
+                object = API->mrb_ary_shift(mrb, API->mrb_ensure_array_type(mrb, data));
+            }
+            binary_buffer->SetAt(current_pos, array_size);
+        }
+
+        else if (stype == ST_HASH) {
+            binary_buffer->Append(type);
+            auto current_pos = binary_buffer->CurrentPos();
+            binary_buffer->Append((st_counter_t)0); // hash_size
+            mrb_value keys = API->mrb_hash_keys(mrb, data);
+            mrb_value key = API->mrb_ary_shift(mrb, API->mrb_ensure_array_type(mrb, keys));
+            st_counter_t hash_size = 0;
+            while (cext_is_symbol(mrb, key) || cext_is_string(mrb, key)) {
+                const char *s_key;
+                serialized_type key_type;
+                if(cext_is_symbol(mrb, key)){
+                    s_key = API->mrb_sym_name(mrb, API->mrb_obj_to_sym(mrb, key));
+                    key_type = ST_SYMBOL;
+                } else {
+                    s_key = API->mrb_string_cstr(mrb, key);
+                    key_type = ST_STRING;
+                }
+
+                binary_buffer->Append(key_type);
+
+                st_counter_t str_len = strlen(s_key) + 1;
+                binary_buffer->Append(str_len);
+                binary_buffer->Append((void*)s_key, str_len);
+
+
+                mrb_value content = API->mrb_hash_get(mrb, data, key);
+                serialize_data(binary_buffer, mrb, content);
+                hash_size++;
+                key = API->mrb_ary_shift(mrb, API->mrb_ensure_array_type(mrb, keys));
+            }
+            binary_buffer->SetAt(current_pos, hash_size);
+        }
+    }
+
+    mrb_value deserialize_data(buffer::BinaryBuffer *binary_buffer, mrb_state *mrb) {
+        unsigned char bin_type;
+        binary_buffer->Read(&bin_type);
+        auto type = (serialized_type)bin_type;
+        if (type == ST_FALSE) {
             return mrb_false_value();
         }
-        if (type == MRB_TT_TRUE) {
-            ++*position;
+        else if (type == ST_TRUE) {
             return mrb_true_value();
         }
-        if (type == MRB_TT_STRING) {
-            ++*position;
-            int data_size = buffer[*position];
-            *position += sizeof(int);
-            mrb_value data = API->mrb_str_new_cstr(mrb, buffer + *position);
-            *position += data_size;
+        else if (type == ST_STRING) {
+            st_counter_t data_size;
+            binary_buffer->Read(&data_size);
+            auto str_ptr = MALLOC_CYCLE(data_size);
+            binary_buffer->Read(str_ptr, data_size);
+            mrb_value data = API->mrb_str_new(mrb, (const char*)str_ptr, data_size - 1);
             return data;
         }
-        if (type == MRB_TT_SYMBOL) {
-            ++*position;
-            int data_size = buffer[*position];
-            *position += sizeof(int);
-            mrb_value data = API->mrb_symbol_value(cext_sym(mrb, buffer + *position));
-            *position += data_size;
+        else if (type == ST_SYMBOL) {
+            st_counter_t data_size;
+            binary_buffer->Read(&data_size);
+            auto str_ptr = MALLOC_CYCLE(data_size);
+            binary_buffer->Read(str_ptr, data_size);
+            mrb_value data = API->mrb_symbol_value(API->mrb_intern_check(mrb, (const char*)str_ptr, data_size - 1));
             return data;
         }
-        if (type == MRB_TT_INTEGER) {
-            ++*position;
-            mrb_int *integer = (mrb_int *) (buffer + *position);
-            *position += sizeof(mrb_int);
-            return API->mrb_int_value(mrb, *integer);
+        else if (type == ST_INT) {
+            mrb_int num;
+            binary_buffer->Read(&num);
+            return API->mrb_int_value(mrb, num);
         }
-        if (type == MRB_TT_FLOAT) {
-            ++*position;
-            mrb_float *d = (mrb_float *) (buffer + *position);
-            *position += sizeof(mrb_float);
-            return API->mrb_float_value(mrb, *d);
+        else if (type == ST_FLOAT) {
+            mrb_float num;
+            binary_buffer->Read(&num);
+            return API->mrb_float_value(mrb, num);
         }
-        if (type == MRB_TT_HASH) {
-            ++*position;
-            int data_size = buffer[*position];
-            *position += sizeof(int);
-            int data_amount = buffer[*position];
-            *position += sizeof(int);
+        else if (type == ST_HASH) {
+            st_counter_t hash_size;
+            binary_buffer->Read(&hash_size);
 
             mrb_value hash = API->mrb_hash_new(mrb);
 
-            for (int i = 0; i < data_amount; ++i) {
+            for (st_counter_t i = 0; i < hash_size; ++i) {
                 //key
-                int key_size = buffer[*position];
-                *position += sizeof(int);
-                const char *key = buffer + *position;
-                *position += key_size;
+                unsigned char key_type;
+                binary_buffer->Read(&key_type);
+                st_counter_t key_size;
+                binary_buffer->Read(&key_size);
+                auto str_ptr = MALLOC_CYCLE(key_size);
+                binary_buffer->Read(str_ptr, key_size);
 
-                mrb_value data = deserialize_data(mrb, buffer, size, position);
+                mrb_value data = deserialize_data(binary_buffer, mrb);
 
-                cext_hash_set(mrb, hash, key, data);
+                if (key_type == ST_STRING) {
+                    cext_hash_set_kstr(mrb, hash, (const char *) str_ptr, data);
+                } else if (key_type == ST_SYMBOL) {
+                    cext_hash_set_ksym(mrb, hash, (const char *) str_ptr, data);
+                }
             }
             return hash;
         }
 
-        if (type == MRB_TT_ARRAY) {
-            ++*position;
-            int data_size = buffer[*position];
-            *position += sizeof(int);
-            int data_amount = buffer[*position];
-            *position += sizeof(int);
+        else if (type == ST_ARRAY) {
+            st_counter_t array_size;
+            binary_buffer->Read(&array_size);
 
             mrb_value array = API->mrb_ary_new(mrb);
 
-            for (int i = 0; i < data_amount; ++i) {
-                mrb_value data = deserialize_data(mrb, buffer, size, position);
-
+            for (st_counter_t i = 0; i < array_size; ++i) {
+                mrb_value data = deserialize_data(binary_buffer, mrb);
                 API->mrb_ary_push(mrb, array, data);
             }
             return array;
         }
 
         return mrb_nil_value();
-    }
-
-    void serialize_data_to_buffer(buffer::BinaryBuffer *binary_buffer, serialized_data_t data) {
-        char c_type = data.type;
-        if (data.type == MRB_TT_STRING || data.type == MRB_TT_SYMBOL) {
-            binary_buffer->Append(c_type);
-            binary_buffer->Append(&data.size, sizeof(int));
-            binary_buffer->Append(data.data, data.size);
-        }
-        if (data.type == MRB_TT_INTEGER) {
-            binary_buffer->Append(c_type);
-            binary_buffer->Append(data.data, sizeof(mrb_int));
-        }
-        if (data.type == MRB_TT_FALSE) {
-            binary_buffer->Append(c_type);
-        }
-        if (data.type == MRB_TT_TRUE) {
-            binary_buffer->Append(c_type);
-        }
-        if (data.type == MRB_TT_FLOAT) {
-            binary_buffer->Append(c_type);
-            binary_buffer->Append(data.data, sizeof(mrb_float));
-        }
-        if (data.type == MRB_TT_HASH) {
-            binary_buffer->Append(c_type);
-            binary_buffer->Append(&data.size, sizeof(int));
-            binary_buffer->Append(&data.amount, sizeof(int));
-
-            auto *hash_entries = (serialized_hash_t *) data.data;
-            for (int i = 0; i < data.amount; ++i) {
-                serialized_hash_t hash_entry = hash_entries[i];
-                char *key = (char*)hash_entry.key;
-
-                //key
-                int key_len = (int) strlen(key) + 1;
-
-                binary_buffer->Append(&key_len, sizeof(int));
-
-                binary_buffer->Append(key, key_len);
-
-                serialize_data_to_buffer(binary_buffer, hash_entry.data);
-            }
-        }
-        if (data.type == MRB_TT_ARRAY) {
-            binary_buffer->Append(c_type);
-            binary_buffer->Append(&data.size, sizeof(int));
-            binary_buffer->Append(&data.amount, sizeof(int));
-
-            auto *array_entries = (serialized_data_t *) data.data;
-            for (int i = 0; i < data.amount; ++i) {
-                serialized_data_t array_entry = array_entries[i];
-                serialize_data_to_buffer(binary_buffer, array_entry);
-            }
-        }
     }
 }
