@@ -86,7 +86,6 @@ ENetHost* socket_enet_host;
 ENetPeer* socket_enet_peer;
 
 std::map<uint64_t, socket_peer_t> socket_enet_peers;
-std::vector<socket_event_t> socket_enet_events;
 
 mrb_value socket_event_receive;
 mrb_value socket_event_connect;
@@ -229,7 +228,7 @@ uint64_t push_peer(ENetPeer *peer) {
 mrb_value push_event(mrb_state *l, ENetEvent *event) {
     auto hash = API->mrb_hash_new(l);
 
-    ENetPeer *peer = nullptr;
+    ENetPeer *peer;
     mrb_value data;
     buffer::BinaryBuffer *buffer;
 
@@ -280,8 +279,6 @@ mrb_value push_event(mrb_state *l, ENetEvent *event) {
             break;
     }
 
-    socket_event_t socket_event = {peer, hash};
-    socket_enet_events.push_back(socket_event);
     return hash;
 }
 
