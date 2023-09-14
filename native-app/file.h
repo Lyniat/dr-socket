@@ -13,7 +13,7 @@ namespace lyniat::socket::file {
 
     void save_buffer(const char *name, buffer::BinaryBuffer buffer);
 
-    mrb_value debug_serialized_to_file(mrb_state* mrb, mrb_value self);
+    mrb_value debug_serialized_to_file(mrb_state* state, mrb_value self);
 
 }
 

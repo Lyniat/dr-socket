@@ -71,9 +71,9 @@ namespace lyniat::socket::enet {
 
     uint64_t compute_peer_key(ENetPeer *peer);
 
-    uint64_t push_peer(ENetPeer *peer);
+    uint64_t get_peer_key(ENetPeer *peer);
 
-    mrb_value push_event(mrb_state *l, ENetEvent *event);
+    mrb_value event_to_hash(mrb_state *l, ENetEvent *event);
 
     ENetPacket *read_packet(mrb_state *l, int idx, enet_uint8 *channel_id);
 

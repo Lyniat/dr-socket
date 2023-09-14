@@ -7,32 +7,31 @@ using namespace lyniat::socket;
 
 #ifdef DEBUG
 
-mrb_value test_serialize_data(mrb_state* mrb, mrb_value self){
+mrb_value test_serialize_data(mrb_state* state, mrb_value self){
     mrb_value data;
-    API->mrb_get_args(mrb, "H", &data);
+    API->mrb_get_args(state, "H", &data);
 
     auto buffer = new buffer::BinaryBuffer();
-    serialize::serialize_data(buffer, mrb, data);
+    serialize::serialize_data(buffer, state, data);
 
     auto ptr = (uintptr_t)buffer->Data();
     auto size = (mrb_int)buffer->Size();
-    auto hash = API->mrb_hash_new(mrb);
-    cext_hash_set_kstr(mrb, hash, "ptr", API->mrb_int_value(mrb, ptr));
-    cext_hash_set_kstr(mrb, hash, "size", API->mrb_int_value(mrb, size));
+    auto hash = API->mrb_hash_new(state);
+    cext_hash_set_kstr(state, hash, "ptr", API->mrb_int_value(state, ptr));
+    cext_hash_set_kstr(state, hash, "size", API->mrb_int_value(state, size));
     delete buffer;
     return hash;
 }
 
-mrb_value test_deserialize_data(mrb_state* mrb, mrb_value self){
+mrb_value test_deserialize_data(mrb_state* state, mrb_value self){
     mrb_value data;
-    API->mrb_get_args(mrb, "H", &data);
-    auto hash_ptr = cext_hash_get(mrb, data, "ptr");
-    auto hash_size = cext_hash_get(mrb, data, "size");
-    auto ptr = (uintptr_t)cext_to_int(mrb, hash_ptr);
-    mrb_int size = cext_to_int(mrb, hash_size);
-    //auto result = serialize::deserialize_data(mrb, (const char*)ptr, size, &position);
+    API->mrb_get_args(state, "H", &data);
+    auto hash_ptr = cext_hash_get(state, data, "ptr");
+    auto hash_size = cext_hash_get(state, data, "size");
+    auto ptr = (uintptr_t)cext_to_int(state, hash_ptr);
+    mrb_int size = cext_to_int(state, hash_size);
     auto buffer = new buffer::BinaryBuffer((void*)ptr, size, false);
-    auto result = serialize::deserialize_data(buffer, mrb);
+    auto result = serialize::deserialize_data(buffer, state);
     delete buffer;
     return result;
 }
