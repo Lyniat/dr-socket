@@ -18,7 +18,8 @@ namespace lyniat::socket::serialize {
         ST_HASH,
         ST_ARRAY,
         ST_STRING,
-        ST_UNDEF
+        ST_UNDEF,
+        ST_NIL
     };
 
     void serialize_data(buffer::BinaryBuffer *binary_buffer, mrb_state *mrb, mrb_value data);

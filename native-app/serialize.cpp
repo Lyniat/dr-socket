@@ -6,6 +6,9 @@
 namespace lyniat::socket::serialize {
 
     serialized_type get_st(mrb_value data){
+        if(mrb_nil_p(data)){
+            return ST_NIL;
+        }
         mrb_vtype type = mrb_type(data);
         switch (type) {
             case MRB_TT_FALSE:
@@ -32,7 +35,7 @@ namespace lyniat::socket::serialize {
     void serialize_data(buffer::BinaryBuffer *binary_buffer, mrb_state *state, mrb_value data) {
         auto stype = get_st(data);
         auto type = (unsigned char)stype;
-        if(stype == ST_FALSE || stype == ST_TRUE) {
+        if(stype == ST_FALSE || stype == ST_TRUE || stype == ST_NIL) {
             binary_buffer->Append(type);
         }
 
@@ -126,6 +129,9 @@ namespace lyniat::socket::serialize {
         }
         else if (type == ST_TRUE) {
             return mrb_true_value();
+        }
+        else if (type == ST_NIL) {
+            return mrb_nil_value();
         }
         else if (type == ST_STRING) {
             st_counter_t data_size;
