@@ -108,6 +108,12 @@ mrb_sym socket_order_flag_reliable;
 mrb_sym socket_order_flag_unsequenced;
 mrb_sym socket_order_flag_unreliable;
 
+constexpr const char* str_event_type = "type";
+constexpr const char* str_peer = "peer";
+constexpr const char* str_channel = "channel";
+constexpr const char* str_data = "data";
+constexpr const char* str_flag = "flag";
+
 ENetHost* get_enet_host(){
     return socket_enet_host;
 }
@@ -236,7 +242,7 @@ mrb_value push_event(mrb_state *l, ENetEvent *event) {
     if (event->peer) {
         peer = event->peer;
         uint64_t key = push_peer(peer);
-        cext_hash_set_kstr(l, hash, "peer", API->mrb_int_value(l, (mrb_int)key));
+        cext_hash_set_ksym(l, hash, str_peer, API->mrb_int_value(l, (mrb_int)key));
     }
 
     switch (event->type) {
@@ -245,14 +251,14 @@ mrb_value push_event(mrb_state *l, ENetEvent *event) {
             //lua_setfield(l, -2, "data");
 
             //lua_pushstring(l, "connect");
-            cext_hash_set_kstr(l, hash, "type", socket_event_connect);
+            cext_hash_set_ksym(l, hash, str_event_type, socket_event_connect);
             break;
         case ENET_EVENT_TYPE_DISCONNECT:
             //lua_pushinteger(l, event->data);
             //lua_setfield(l, -2, "data");
 
             //lua_pushstring(l, "disconnect");
-            cext_hash_set_kstr(l, hash, "type", socket_event_disconnect);
+            cext_hash_set_ksym(l, hash, str_event_type, socket_event_disconnect);
             break;
         case ENET_EVENT_TYPE_RECEIVE:
             //lua_pushlstring(l, (const char *)event->packet->data, event->packet->dataLength);
@@ -263,19 +269,19 @@ mrb_value push_event(mrb_state *l, ENetEvent *event) {
 
             //lua_pushstring(l, "receive");
 
-            cext_hash_set_kstr(l, hash, "type", socket_event_receive);
-            cext_hash_set_kstr(l, hash, "channel", API->mrb_int_value(l, event->channelID));
+            cext_hash_set_ksym(l, hash, str_event_type, socket_event_receive);
+            cext_hash_set_ksym(l, hash, str_channel, API->mrb_int_value(l, event->channelID));
 
             buffer = new buffer::BinaryBuffer(event->packet->data, event->packet->dataLength, false);
             data = serialize::deserialize_data(buffer, l);
 
-            cext_hash_set_kstr(l, hash, "data", data);
+            cext_hash_set_ksym(l, hash, str_data, data);
 
             enet_packet_destroy(event->packet);
             delete buffer;
             break;
         case ENET_EVENT_TYPE_NONE:
-            cext_hash_set_kstr(l, hash, "type", socket_event_none);
+            cext_hash_set_ksym(l, hash, str_event_type, socket_event_none);
             break;
     }
 
@@ -466,7 +472,7 @@ mrb_value host_connect(mrb_state *l, mrb_value self) {
     parse_address(l, str_address, &address);
 
     channel_count = cext_hash_get_int_default(l, h, "channel_count", (mrb_int)channel_count);
-    data = cext_hash_get_int_default(l, h, "data", (mrb_int)data);
+    data = cext_hash_get_int_default(l, h, str_data, (mrb_int)data);
 
     // printf("host connect, channels=%d, data=%d\n", channel_count, data);
     peer = enet_host_connect(host, &address, channel_count, data);
@@ -852,9 +858,9 @@ mrb_value peer_send(mrb_state *l, mrb_value self) {
     mrb_value h;
     API->mrb_get_args(l, "iH", &peer_id, &h);
 
-    auto data = cext_hash_get_save_hash(l, h, "data");
-    auto sym_flag = cext_hash_get_sym_default(l, h, "flag", socket_order_flag_reliable);
-    auto channel_id = cext_hash_get_int_default(l, h, "channel", 0);
+    auto data = cext_hash_get_save_hash(l, h, str_data);
+    auto sym_flag = cext_hash_get_sym_default(l, h, str_flag, socket_order_flag_reliable);
+    auto channel_id = cext_hash_get_int_default(l, h, str_channel, 0);
 
     auto flag = ENET_PACKET_FLAG_RELIABLE;
 
