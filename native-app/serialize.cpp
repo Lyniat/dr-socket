@@ -68,12 +68,11 @@ namespace lyniat::socket::serialize {
             binary_buffer->Append(type);
             auto current_pos = binary_buffer->CurrentPos();
             binary_buffer->Append((st_counter_t)0); // array_size
-            mrb_value object = API->mrb_ary_shift(state, API->mrb_ensure_array_type(state, data));
             st_counter_t array_size = 0;
-            while (object.w != 0) {
+            for (mrb_int i = 0; i < RARRAY_LEN(data); i++) {
+                auto object = RARRAY_PTR(data)[i];
                 serialize_data(binary_buffer, state, object);
                 array_size++;
-                object = API->mrb_ary_shift(state, API->mrb_ensure_array_type(state, data));
             }
             binary_buffer->SetAt(current_pos, array_size);
         }
@@ -82,32 +81,38 @@ namespace lyniat::socket::serialize {
             binary_buffer->Append(type);
             auto current_pos = binary_buffer->CurrentPos();
             binary_buffer->Append((st_counter_t)0); // hash_size
-            mrb_value keys = API->mrb_hash_keys(state, data);
-            mrb_value key = API->mrb_ary_shift(state, API->mrb_ensure_array_type(state, keys));
             st_counter_t hash_size = 0;
-            while (cext_is_symbol(state, key) || cext_is_string(state, key)) {
+            auto hash = mrb_hash_ptr(data);
+
+            typedef struct to_pass_t {buffer::BinaryBuffer *buffer; st_counter_t *counter;} to_pass_t;
+            to_pass_t to_pass = {binary_buffer, &hash_size};
+
+            API->mrb_hash_foreach(state, hash, {[](mrb_state *intern_state, mrb_value key, mrb_value val, void* passed) -> int {
+                auto to_pass = (to_pass_t*)passed;
+                auto binary_buffer = to_pass->buffer;
+                st_counter_t *hash_size = to_pass->counter;
                 const char *s_key;
                 serialized_type key_type;
-                if(cext_is_symbol(state, key)){
-                    s_key = API->mrb_sym_name(state, API->mrb_obj_to_sym(state, key));
+                if(cext_is_symbol(intern_state, key)){
+                    s_key = API->mrb_sym_name(intern_state, API->mrb_obj_to_sym(intern_state, key));
                     key_type = ST_SYMBOL;
-                } else {
-                    s_key = API->mrb_string_cstr(state, key);
+                } else if (cext_is_string(intern_state, key)){
+                    s_key = API->mrb_string_cstr(intern_state, key);
                     key_type = ST_STRING;
+                } else {
+                    return 0;
                 }
 
                 binary_buffer->Append(key_type);
-
                 st_counter_t str_len = strlen(s_key) + 1;
                 binary_buffer->Append(str_len);
                 binary_buffer->Append((void*)s_key, str_len);
 
+                serialize_data(binary_buffer, intern_state, val);
+                *hash_size += 1;
+                return 0;
+            }}, &to_pass);
 
-                mrb_value content = API->mrb_hash_get(state, data, key);
-                serialize_data(binary_buffer, state, content);
-                hash_size++;
-                key = API->mrb_ary_shift(state, API->mrb_ensure_array_type(state, keys));
-            }
             binary_buffer->SetAt(current_pos, hash_size);
         }
     }
