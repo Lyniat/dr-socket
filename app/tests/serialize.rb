@@ -6,7 +6,7 @@ end
 def get_test_data
     test_data = {
         "this_is_data?" => true,
-        letters: [
+        :letters => [
             "a",
             "b",
             "c",

@@ -64,7 +64,7 @@ namespace lyniat::socket::enet {
     API->mrb_define_module_function(state, module, name, f, MRB_ARGS_REQ(args))
 #else
 #define define_debug_function(f, name, args) \
-    API->define_debug_function(state, module, name, {[](mrb_state *mrb, mrb_value self) { \
+    API->mrb_define_module_function(state, module, name, {[](mrb_state *mrb, mrb_value self) { \
         print::print(mrb, print::PRINT_ERROR, "Function {} is only available in Debug build.", #f); \
         return mrb_nil_value(); \
     }}, MRB_ARGS_REQ(args))
@@ -86,7 +86,6 @@ ENetHost* socket_enet_host;
 ENetPeer* socket_enet_peer;
 
 std::map<uint64_t, socket_peer_t> socket_enet_peers;
-std::vector<socket_event_t> socket_enet_events;
 
 mrb_value socket_event_receive;
 mrb_value socket_event_connect;
@@ -108,6 +107,12 @@ mrb_value socket_state_unknown;
 mrb_sym socket_order_flag_reliable;
 mrb_sym socket_order_flag_unsequenced;
 mrb_sym socket_order_flag_unreliable;
+
+constexpr const char* str_event_type = "type";
+constexpr const char* str_peer = "peer";
+constexpr const char* str_channel = "channel";
+constexpr const char* str_data = "data";
+constexpr const char* str_flag = "flag";
 
 ENetHost* get_enet_host(){
     return socket_enet_host;
@@ -229,15 +234,15 @@ uint64_t push_peer(ENetPeer *peer) {
 mrb_value push_event(mrb_state *l, ENetEvent *event) {
     auto hash = API->mrb_hash_new(l);
 
-    ENetPeer *peer = nullptr;
-    int position;
+    ENetPeer *peer;
     mrb_value data;
+    buffer::BinaryBuffer *buffer;
 
 
     if (event->peer) {
         peer = event->peer;
         uint64_t key = push_peer(peer);
-        cext_hash_set(l, hash, "peer", API->mrb_int_value(l, (mrb_int)key));
+        cext_hash_set_ksym(l, hash, str_peer, API->mrb_int_value(l, (mrb_int)key));
     }
 
     switch (event->type) {
@@ -246,14 +251,14 @@ mrb_value push_event(mrb_state *l, ENetEvent *event) {
             //lua_setfield(l, -2, "data");
 
             //lua_pushstring(l, "connect");
-            cext_hash_set(l, hash, "type", socket_event_connect);
+            cext_hash_set_ksym(l, hash, str_event_type, socket_event_connect);
             break;
         case ENET_EVENT_TYPE_DISCONNECT:
             //lua_pushinteger(l, event->data);
             //lua_setfield(l, -2, "data");
 
             //lua_pushstring(l, "disconnect");
-            cext_hash_set(l, hash, "type", socket_event_disconnect);
+            cext_hash_set_ksym(l, hash, str_event_type, socket_event_disconnect);
             break;
         case ENET_EVENT_TYPE_RECEIVE:
             //lua_pushlstring(l, (const char *)event->packet->data, event->packet->dataLength);
@@ -264,27 +269,22 @@ mrb_value push_event(mrb_state *l, ENetEvent *event) {
 
             //lua_pushstring(l, "receive");
 
-            cext_hash_set(l, hash, "type", socket_event_receive);
-            cext_hash_set(l, hash, "channel", API->mrb_int_value(l, event->channelID));
+            cext_hash_set_ksym(l, hash, str_event_type, socket_event_receive);
+            cext_hash_set_ksym(l, hash, str_channel, API->mrb_int_value(l, event->channelID));
 
-            //const char* buffer = (const char*)MALLOC(event->packet->dataLength);
-            //memcpy((void*)buffer, event->packet->data, event->packet->dataLength);
+            buffer = new buffer::BinaryBuffer(event->packet->data, event->packet->dataLength, false);
+            data = serialize::deserialize_data(buffer, l);
 
-            position = 0;
-            //mrb_value data = deserialize_data(l, buffer, event->packet->dataLength, &position);
-            data = serialize::deserialize_data(l, (const char*)event->packet->data, event->packet->dataLength, &position);
-
-            cext_hash_set(l, hash, "data", data);
+            cext_hash_set_ksym(l, hash, str_data, data);
 
             enet_packet_destroy(event->packet);
+            delete buffer;
             break;
         case ENET_EVENT_TYPE_NONE:
-            cext_hash_set(l, hash, "type", socket_event_none);
+            cext_hash_set_ksym(l, hash, str_event_type, socket_event_none);
             break;
     }
 
-    socket_event_t socket_event = {peer, hash};
-    socket_enet_events.push_back(socket_event);
     return hash;
 }
 
@@ -472,7 +472,7 @@ mrb_value host_connect(mrb_state *l, mrb_value self) {
     parse_address(l, str_address, &address);
 
     channel_count = cext_hash_get_int_default(l, h, "channel_count", (mrb_int)channel_count);
-    data = cext_hash_get_int_default(l, h, "data", (mrb_int)data);
+    data = cext_hash_get_int_default(l, h, str_data, (mrb_int)data);
 
     // printf("host connect, channels=%d, data=%d\n", channel_count, data);
     peer = enet_host_connect(host, &address, channel_count, data);
@@ -781,47 +781,26 @@ mrb_value peer_state(mrb_state *l, mrb_value self) {
 
     switch (peer->state) {
         case (ENET_PEER_STATE_DISCONNECTED):
-            //lua_pushstring (l, "disconnected");
             return socket_state_disconnected;
-            break;
         case (ENET_PEER_STATE_CONNECTING):
-            //lua_pushstring (l, "connecting");
             return socket_state_connecting;
-            break;
         case (ENET_PEER_STATE_ACKNOWLEDGING_CONNECT):
-            //lua_pushstring (l, "acknowledging_connect");
             return socket_state_acknowledging_connect;
-            break;
         case (ENET_PEER_STATE_CONNECTION_PENDING):
-            //lua_pushstring (l, "connection_pending");
             return socket_state_connection_pending;
-            break;
         case (ENET_PEER_STATE_CONNECTION_SUCCEEDED):
-            //lua_pushstring (l, "connection_succeeded");
             return socket_state_connection_succeeded;
-            break;
         case (ENET_PEER_STATE_CONNECTED):
-            //lua_pushstring (l, "connected");
             return  socket_state_connected;
-            break;
         case (ENET_PEER_STATE_DISCONNECT_LATER):
-            //lua_pushstring (l, "disconnect_later");
             return  socket_state_disconnect_later;
-            break;
         case (ENET_PEER_STATE_DISCONNECTING):
-            //lua_pushstring (l, "disconnecting");
             return  socket_state_disconnecting;
-            break;
         case (ENET_PEER_STATE_ACKNOWLEDGING_DISCONNECT):
-            //lua_pushstring (l, "acknowledging_disconnect");
             return  socket_state_acknowledging_disconnect;
-            break;
         case (ENET_PEER_STATE_ZOMBIE):
-            //lua_pushstring (l, "zombie");
             return socket_state_zombie;
-            break;
         default:
-            //lua_pushstring (l, "unknown");
             return socket_state_unknown;
     }
 }
@@ -879,9 +858,9 @@ mrb_value peer_send(mrb_state *l, mrb_value self) {
     mrb_value h;
     API->mrb_get_args(l, "iH", &peer_id, &h);
 
-    auto data = cext_hash_get_save_hash(l, h, "data");
-    auto sym_flag = cext_hash_get_sym_default(l, h, "flag", socket_order_flag_reliable);
-    auto channel_id = cext_hash_get_int_default(l, h, "channel", 0);
+    auto data = cext_hash_get_save_hash(l, h, str_data);
+    auto sym_flag = cext_hash_get_sym_default(l, h, str_flag, socket_order_flag_reliable);
+    auto channel_id = cext_hash_get_int_default(l, h, str_channel, 0);
 
     auto flag = ENET_PACKET_FLAG_RELIABLE;
 
@@ -891,10 +870,8 @@ mrb_value peer_send(mrb_state *l, mrb_value self) {
         flag = ENET_PACKET_FLAG_UNSEQUENCED;
     }
 
-    serialize::serialized_data_t serialized_data = serialize::serialize_data(l, data);
-
     auto buffer = new buffer::BinaryBuffer();
-    serialize_data_to_buffer(buffer,serialized_data);
+    serialize::serialize_data(buffer, l, data);
 
     ENetPacket * packet = enet_packet_create (buffer->Data(),
                                               buffer->Size(),
@@ -902,7 +879,6 @@ mrb_value peer_send(mrb_state *l, mrb_value self) {
 
     ENetPeer *peer = get_enet_peer(peer_id);
 
-    // printf("sending, channel_id=%d\n", channel_id);
     int ret = enet_peer_send(peer, channel_id, packet);
     if (ret < 0) {
         enet_packet_destroy(packet);
@@ -963,30 +939,28 @@ void socket_open_enet(mrb_state* state) {
     API->mrb_define_module_function(state, module_socket, "get_build_info", {[](mrb_state *mrb, mrb_value self) {
         auto enet_version = linked_version(mrb, self);
         auto result = API->mrb_hash_new(mrb);
-        cext_hash_set(mrb, result, "enet", enet_version);
+        cext_hash_set_kstr(mrb, result, "enet", enet_version);
 
         auto meta_platform = (const char *) META_PLATFORM;
         auto meta_type = (const char *) META_TYPE;
         auto meta_git_hash = (const char *) META_GIT_HASH;
         auto meta_git_branch = (const char *) META_GIT_BRANCH;
-        auto meta_timestamp = (const char *) META_TIMESTAMP;
         auto meta_compiler_id = (const char *) META_COMPILER_ID;
         auto meta_compiler_version = (const char *) META_COMPILER_VERSION;
 
         auto build_information = API->mrb_hash_new(mrb);
-        cext_hash_set(mrb, build_information, "target_platform", API->mrb_str_new_cstr(mrb, meta_platform));
-        cext_hash_set(mrb, build_information, "build_type", API->mrb_str_new_cstr(mrb, meta_type));
-        cext_hash_set(mrb, build_information, "git_hash", API->mrb_str_new_cstr(mrb, meta_git_hash));
-        cext_hash_set(mrb, build_information, "git_branch", API->mrb_str_new_cstr(mrb, meta_git_branch));
-        cext_hash_set(mrb, build_information, "build_time", API->mrb_str_new_cstr(mrb, meta_timestamp));
+        cext_hash_set_kstr(mrb, build_information, "target_platform", API->mrb_str_new_cstr(mrb, meta_platform));
+        cext_hash_set_kstr(mrb, build_information, "build_type", API->mrb_str_new_cstr(mrb, meta_type));
+        cext_hash_set_kstr(mrb, build_information, "git_hash", API->mrb_str_new_cstr(mrb, meta_git_hash));
+        cext_hash_set_kstr(mrb, build_information, "git_branch", API->mrb_str_new_cstr(mrb, meta_git_branch));
 
         auto compiler = API->mrb_hash_new(mrb);
-        cext_hash_set(mrb, compiler, "id", API->mrb_str_new_cstr(mrb, meta_compiler_id));
-        cext_hash_set(mrb, compiler, "version", API->mrb_str_new_cstr(mrb, meta_compiler_version));
+        cext_hash_set_kstr(mrb, compiler, "id", API->mrb_str_new_cstr(mrb, meta_compiler_id));
+        cext_hash_set_kstr(mrb, compiler, "version", API->mrb_str_new_cstr(mrb, meta_compiler_version));
 
-        cext_hash_set(mrb, build_information, "compiler", compiler);
+        cext_hash_set_kstr(mrb, build_information, "compiler", compiler);
 
-        cext_hash_set(mrb, result, "build_information", build_information);
+        cext_hash_set_kstr(mrb, result, "build_information", build_information);
 
         return result;
     }}, MRB_ARGS_REQ(0));
@@ -996,7 +970,7 @@ void socket_open_enet(mrb_state* state) {
 #ifdef DEBUG
                                             lyniat_memory_check_allocated_memory();
 #else
-                                            ruby_print(mrb, (char*)"check_allocated_memory is only available in a Debug build.");
+                                            print::print(mrb, "check_allocated_memory is only available in a Debug build.");
 #endif
                                             return mrb_nil_value();
                                         }}, MRB_ARGS_REQ(0));

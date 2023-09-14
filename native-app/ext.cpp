@@ -29,7 +29,6 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
 !defined(META_TYPE)             || \
 !defined(META_GIT_HASH)         || \
 !defined(META_GIT_BRANCH)       || \
-!defined(META_TIMESTAMP)        || \
 !defined(META_COMPILER_ID)      || \
 !defined(META_COMPILER_VERSION)
 #error "Missing some Meta information. See CMakeLists.txt for more information.\n"
