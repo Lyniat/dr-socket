@@ -14,15 +14,15 @@ namespace lyniat::socket::file {
         save_binary(name, buffer.Data(), buffer.Size());
     }
 
-    mrb_value debug_serialized_to_file(mrb_state* mrb, mrb_value self){
+    mrb_value debug_serialized_to_file(mrb_state* state, mrb_value self){
         mrb_value data;
-        API->mrb_get_args(mrb, "H", &data);
-        auto hash_ptr = cext_hash_get(mrb, data, "ptr");
-        auto hash_size = cext_hash_get(mrb, data, "size");
-        auto hash_name = cext_hash_get(mrb, data, "name");
-        auto ptr = (uintptr_t)cext_to_int(mrb, hash_ptr);
-        mrb_int size = cext_to_int(mrb, hash_size);
-        auto c_name = cext_to_string(mrb, hash_name);
+        API->mrb_get_args(state, "H", &data);
+        auto hash_ptr = cext_hash_get(state, data, "ptr");
+        auto hash_size = cext_hash_get(state, data, "size");
+        auto hash_name = cext_hash_get(state, data, "name");
+        auto ptr = (uintptr_t)cext_to_int(state, hash_ptr);
+        mrb_int size = cext_to_int(state, hash_size);
+        auto c_name = cext_to_string(state, hash_name);
         save_binary(c_name, (void*)ptr, size);
         return mrb_nil_value();
     }
