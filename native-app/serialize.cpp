@@ -31,6 +31,79 @@ namespace lyniat::socket::serialize {
                 return ST_UNDEF;
         }
     }
+    
+    bool add_hash_key(buffer::BinaryBuffer *binary_buffer, mrb_state *state, mrb_value key){
+        auto key_type = get_st(key);
+
+        if(key_type == ST_STRING) {
+            auto s_key = API->mrb_string_cstr(state, key);
+            binary_buffer->Append(key_type);
+            st_counter_t str_len = strlen(s_key) + 1;
+            binary_buffer->Append(str_len);
+            binary_buffer->Append((void*)s_key, str_len);
+        }
+        else if(key_type == ST_SYMBOL) {
+            auto s_key = API->mrb_sym_name(state, API->mrb_obj_to_sym(state, key));
+            binary_buffer->Append(key_type);
+            st_counter_t str_len = strlen(s_key) + 1;
+            binary_buffer->Append(str_len);
+            binary_buffer->Append((void*)s_key, str_len);
+        }
+        else if(key_type == ST_INT) {
+            auto num_key = cext_to_int(state, key);
+            binary_buffer->Append(key_type);
+            binary_buffer->Append(num_key);
+        }
+        else if(key_type == ST_FLOAT) {
+            auto num_key = cext_to_float(state, key);
+            binary_buffer->Append(key_type);
+            binary_buffer->Append(num_key);
+        }
+        else {
+            return false;
+        }
+
+        return true;
+    }
+
+    bool set_hash_key(buffer::BinaryBuffer *binary_buffer, mrb_state *state, mrb_value hash){
+        serialized_type key_type;
+        binary_buffer->Read(&key_type);
+        mrb_value key;
+
+        if(key_type == ST_STRING) {
+            st_counter_t key_size;
+            binary_buffer->Read(&key_size);
+            auto str_ptr = MALLOC_CYCLE(key_size);
+            binary_buffer->Read(str_ptr, key_size);
+            key = API->mrb_str_new_cstr(state, (const char*)str_ptr);
+        }
+        else if(key_type == ST_SYMBOL) {
+            st_counter_t key_size;
+            binary_buffer->Read(&key_size);
+            auto str_ptr = MALLOC_CYCLE(key_size);
+            binary_buffer->Read(str_ptr, key_size);
+            key = mrb_symbol_value(cext_sym(state, (const char*)str_ptr));
+        }
+        else if(key_type == ST_INT) {
+            mrb_int num_key;
+            binary_buffer->Read(&num_key);
+            key = API->mrb_int_value(state, num_key);
+        }
+        else if(key_type == ST_FLOAT) {
+            mrb_float num_key;
+            binary_buffer->Read(&num_key);
+            key = API->mrb_float_value(state, num_key);
+        }
+        else {
+            return false;
+        }
+
+        mrb_value data = deserialize_data(binary_buffer, state);
+
+        API->mrb_hash_set(state, hash, key, data);
+        return true;
+    }
 
     void serialize_data(buffer::BinaryBuffer *binary_buffer, mrb_state *state, mrb_value data) {
         auto stype = get_st(data);
@@ -94,25 +167,11 @@ namespace lyniat::socket::serialize {
                 auto to_pass = (to_pass_t*)passed;
                 auto binary_buffer = to_pass->buffer;
                 st_counter_t *hash_size = to_pass->counter;
-                const char *s_key;
-                serialized_type key_type;
-                if(cext_is_symbol(intern_state, key)){
-                    s_key = API->mrb_sym_name(intern_state, API->mrb_obj_to_sym(intern_state, key));
-                    key_type = ST_SYMBOL;
-                } else if (cext_is_string(intern_state, key)){
-                    s_key = API->mrb_string_cstr(intern_state, key);
-                    key_type = ST_STRING;
-                } else {
-                    return 0;
+
+                if(add_hash_key(binary_buffer, intern_state, key)){
+                    serialize_data(binary_buffer, intern_state, val);
+                    *hash_size += 1;
                 }
-
-                binary_buffer->Append(key_type);
-                st_counter_t str_len = strlen(s_key) + 1;
-                binary_buffer->Append(str_len);
-                binary_buffer->Append((void*)s_key, str_len);
-
-                serialize_data(binary_buffer, intern_state, val);
-                *hash_size += 1;
                 return 0;
             }}, &to_pass);
 
@@ -166,21 +225,7 @@ namespace lyniat::socket::serialize {
             mrb_value hash = API->mrb_hash_new(state);
 
             for (st_counter_t i = 0; i < hash_size; ++i) {
-                //key
-                unsigned char key_type;
-                binary_buffer->Read(&key_type);
-                st_counter_t key_size;
-                binary_buffer->Read(&key_size);
-                auto str_ptr = MALLOC_CYCLE(key_size);
-                binary_buffer->Read(str_ptr, key_size);
-
-                mrb_value data = deserialize_data(binary_buffer, state);
-
-                if (key_type == ST_STRING) {
-                    cext_hash_set_kstr(state, hash, (const char *) str_ptr, data);
-                } else if (key_type == ST_SYMBOL) {
-                    cext_hash_set_ksym(state, hash, (const char *) str_ptr, data);
-                }
+                set_hash_key(binary_buffer, state, hash);
             }
             return hash;
         }
