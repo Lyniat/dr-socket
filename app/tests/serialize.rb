@@ -29,6 +29,12 @@ def get_test_data
                 "card number" => "0016 0032 0064 0128",
             },
         },
+        "what_causes_exceptions?": nil,
+        "different_keys": {
+            567 => "567",
+            "abc" => "ABC",
+            3.14 => "PI",
+        },
         "end_of_data" => true,
     }
 end

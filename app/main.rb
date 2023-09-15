@@ -1,3 +1,5 @@
+require "app/tests/serialize.rb"
+
 $gtk.ffi_misc.gtk_dlopen("socket")
 include FFI::DRSocket
 
