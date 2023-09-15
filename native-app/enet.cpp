@@ -47,6 +47,7 @@
 #include "buffer.h"
 #include "test.h"
 #include "file.h"
+#include "socket.rb.h"
 
 /*
 #define check_host(state, idx)\
@@ -82,6 +83,8 @@ namespace lyniat::socket::enet {
     }}, MRB_ARGS_REQ(args))
 
 #define ENET_ALIGNOF(x) alignof(x)
+
+mrb_data_type dr_peer_struct;
 
 std::map<mrb_int, DRPeer*> dr_peers;
 mrb_int peer_counter = 0;
@@ -734,8 +737,45 @@ mrb_value peer_send(mrb_state *state, mrb_value self) {
 
 void socket_open_enet(mrb_state* state) {
     struct RClass *FFI = API->mrb_module_get(state, "FFI");
-    struct RClass *module = API->mrb_module_get_under(state, FFI, "DRSocket");
+    //struct RClass *module = API->mrb_module_get_under(state, FFI, "DRSocket");
     //struct RClass *module = API->mrb_module_get_under(state, module_socket, "Raw");
+    struct RClass *module = API->mrb_define_module_under(state, FFI, "DRSocket");
+
+    struct RClass *class_dr_peer;
+
+    class_dr_peer = API->mrb_define_class_under(state, module, "Peer", state->object_class);
+    MRB_SET_INSTANCE_TT(class_dr_peer, MRB_TT_DATA);
+    API->mrb_define_method(state, class_dr_peer, "initialize", dr_peer_initialize, MRB_ARGS_REQ(2));
+
+    API->mrb_define_method(state, class_dr_peer, "next_event", {[](mrb_state *state, mrb_value self) {
+        auto peer_id = get_peer_id(state, self);
+        auto peer = dr_peers[peer_id];
+        auto event = peer->GetNextEvent(state);
+        return event;
+    }}, MRB_ARGS_NONE());
+
+    API->mrb_define_method(state, class_dr_peer, "send", {[](mrb_state *state, mrb_value self) {
+        mrb_value data;
+        mrb_int receiver;
+        API->mrb_get_args(state, "iH", &receiver, &data);
+        auto peer_id = get_peer_id(state, self);
+        auto peer = dr_peers[peer_id];
+        peer->Send(state, data, receiver);
+        return mrb_nil_value();
+    }}, MRB_ARGS_REQ(2));
+
+    API->mrb_define_method(state, class_dr_peer, "connect", {[](mrb_state *state, mrb_value self) {
+        mrb_value rb_address;
+        mrb_int port;
+        API->mrb_get_args(state, "Si", &rb_address, &port);
+        auto peer_id = get_peer_id(state, self);
+        auto peer = dr_peers[peer_id];
+        auto address = fmt::format("{}:{}", API->mrb_string_cstr(state, rb_address), port);
+        peer->Connect(state, address);
+        return mrb_nil_value();
+    }}, MRB_ARGS_REQ(2));
+
+    API->mrb_load_string(state, ruby_socket_code);
 
     enet_initialize();
     //atexit(enet_deinitialize); TODO: use this
@@ -855,6 +895,10 @@ void socket_open_enet(mrb_state* state) {
             return;
         }
 }
+    DRPeer::~DRPeer(){
+
+
+}
     void DRPeer::Connect(mrb_state *state, std::string address){
         if(m_is_host){
             print::print(state, print::PRINT_ERROR, "Server is not allowed to explicitly connect to a client!");
@@ -932,4 +976,41 @@ void socket_open_enet(mrb_state* state) {
 
         delete buffer;
 }
+
+    mrb_value dr_peer_initialize(mrb_state *state, mrb_value self) {
+        mrb_int is_host;
+        mrb_value rb_address;
+        API->mrb_get_args(state, "iS", &is_host, &rb_address);
+        auto address = cext_to_string(state, rb_address);
+        auto peer = new DRPeer(state, is_host != 0, address);
+        dr_peers[peer_counter] = peer;
+        auto to_return = peer_counter;
+        peer_counter++;
+
+        dr_peer_struct = { "Peer", [](mrb_state *mrb, void *data) {
+            auto dr_peer = (DRPeerStruct*)data;
+            auto peer_id = dr_peer->internal_peer_id;
+            auto peer = dr_peers[peer_id];
+            dr_peers.erase(peer_id);
+            delete peer;
+            API->mrb_free(mrb, data);
+        }};
+
+        DRPeerStruct *p;
+
+        p = (DRPeerStruct*)API->mrb_malloc(state, sizeof(DRPeerStruct));
+        p->internal_peer_id = to_return;
+
+        DATA_PTR(self) = p;
+        DATA_TYPE(self) = &dr_peer_struct;
+
+        return self;
+}
+    mrb_int get_peer_id(mrb_state *state, mrb_value self) {
+        auto dr_ps = (DRPeerStruct*)API->mrb_data_get_ptr(state, self, &dr_peer_struct);
+        if (dr_ps == nullptr) {
+            //TODO: add exception or similar
+        }
+        return dr_ps->internal_peer_id;
+    }
 }

@@ -126,6 +126,8 @@ namespace lyniat::socket::enet {
 
     mrb_value peer_send(mrb_state *l, mrb_value self);
 
+    mrb_int get_peer_id(mrb_state *state, mrb_value self);
+
     class DRPeer {
     public:
         DRPeer(mrb_state *state, bool is_host, std::string address);
@@ -143,6 +145,13 @@ namespace lyniat::socket::enet {
 
     extern std::map<mrb_int, DRPeer*> dr_peers;
     extern mrb_int peer_counter;
+
+    typedef struct DRPeerStruct {
+        mrb_int internal_peer_id;
+    } DRPeerStruct;
+
+    extern struct mrb_data_type dr_peer_struct;
+    extern mrb_value dr_peer_initialize(mrb_state *state, mrb_value self);
 
 }
 

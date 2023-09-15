@@ -4,36 +4,18 @@
 
 static const char * ruby_socket_code = R"(
 
+include FFI
+
 module DRSocket
-    class Server
-        def initialize port
-            @peer_id = __peer_initialize(1, "localhost:#{port}")
-        end
-
-        def next_event
-            __get_next_event(@peer_id)
-        end
-
-        def send receiver, data
-            __send(@peer_id, data, receiver)
+    class Client < Peer
+        def initialize
+            super(0, "")
         end
     end
 
-    class Client
-        def initialize
-            @peer_id = __peer_initialize(0, "")
-        end
-
-        def connect address, port
-            __connect(@peer_id, "#{address}:#{port}")
-        end
-
-        def next_event
-            __get_next_event(@peer_id)
-        end
-
-        def send receiver, data
-            __send(@peer_id, data, receiver)
+    class Server < Peer
+        def initialize port
+            super(1, "localhost:#{port}")
         end
     end
 end
@@ -45,7 +27,7 @@ class Runtime
     define_method(:__sdl_tick__) do |args|
         old_sdl_tick.bind(self).(args)
 
-        __free_cycle_memory
+        #DRSocket.__free_cycle_memory
     end
   end
 end
