@@ -41,8 +41,8 @@ end
 
 def test_serialize args, assert
     test_data = get_test_data
-    data = $socket.__test_serialize(test_data)
-    result = $socket.__test_deserialize(data)
+    data = __test_serialize(test_data)
+    result = __test_deserialize(data)
     diff = hash_diff(test_data, result)
 
     assert.true! diff.empty?, "Test hashes differ! #{diff}"

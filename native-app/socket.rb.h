@@ -17,6 +17,8 @@ module DRSocket
         def initialize port
             super(1, "localhost:#{port}")
         end
+
+        undef connect
     end
 end
 
@@ -27,7 +29,7 @@ class Runtime
     define_method(:__sdl_tick__) do |args|
         old_sdl_tick.bind(self).(args)
 
-        #DRSocket.__free_cycle_memory
+        __free_cycle_memory
     end
   end
 end
