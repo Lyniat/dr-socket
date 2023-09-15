@@ -114,6 +114,10 @@ mrb_sym socket_order_flag_reliable;
 mrb_sym socket_order_flag_unsequenced;
 mrb_sym socket_order_flag_unreliable;
 
+mrb_sym socket_pass_to_server;
+mrb_sym socket_pass_to_all_other_clients;
+mrb_sym socket_pass_to_self;
+
 constexpr const char* str_event_type = "type";
 constexpr const char* str_peer = "peer";
 constexpr const char* str_channel = "channel";
@@ -157,6 +161,10 @@ void register_socket_symbols(mrb_state *mrb){
     socket_order_flag_reliable = cext_sym(mrb, "s_order_reliable");
     socket_order_flag_unsequenced = cext_sym(mrb, "s_order_unsequenced");
     socket_order_flag_unreliable = cext_sym(mrb, "s_order_unreliable");
+
+    socket_pass_to_server = cext_sym(mrb, "s_pass_to_server");
+    socket_pass_to_all_other_clients = cext_sym(mrb, "s_pass_to_other_clients");
+    socket_pass_to_self = cext_sym(mrb, "s_pass_to_self");
 }
 
 /**
