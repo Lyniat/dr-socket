@@ -3,21 +3,40 @@
 #define DR_SOCKET_SOCKET_RB_H
 
 static const char * ruby_socket_code = R"(
+
 module DRSocket
-    class << self
-        def raw
-            DRSocket::Raw
+    class Server
+        def initialize port
+            @peer_id = __peer_initialize(1, "localhost:#{port}")
+        end
+
+        def next_event
+            __get_next_event(@peer_id)
+        end
+
+        def send receiver, data
+            __send(@peer_id, data, receiver)
+        end
+    end
+
+    class Client
+        def initialize
+            @peer_id = __peer_initialize(0, "")
+        end
+
+        def connect address, port
+            __connect(@peer_id, "#{address}:#{port}")
+        end
+
+        def next_event
+            __get_next_event(@peer_id)
+        end
+
+        def send receiver, data
+            __send(@peer_id, data, receiver)
         end
     end
 end
-
-module DRSocket::Raw
-    class << self
-
-    end
-end
-
-$socket = DRSocket
 
 module GTK
 class Runtime

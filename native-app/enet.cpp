@@ -72,6 +72,9 @@ namespace lyniat::socket::enet {
 #define define_function(f, args) \
     API->mrb_define_module_function(state, module, #f, f, MRB_ARGS_REQ(args))
 
+#define define_function_name(f, args, name) \
+    API->mrb_define_module_function(state, module, name, f, MRB_ARGS_REQ(args))
+
 #define undefine_function(f, args) \
     API->mrb_define_module_function(state, module, #f, {[](mrb_state *mrb, mrb_value self) { \
         print::print(mrb, print::PRINT_ERROR, "Function {} is currently not implemented. Sorry :(", #f); \
@@ -80,10 +83,10 @@ namespace lyniat::socket::enet {
 
 #define ENET_ALIGNOF(x) alignof(x)
 
-socket_type_t current_type = NONE;
+std::map<mrb_int, DRPeer*> dr_peers;
+mrb_int peer_counter = 0;
 
 ENetHost* socket_enet_host;
-ENetPeer* socket_enet_peer;
 
 std::map<uint64_t, socket_peer_t> socket_enet_peers;
 
@@ -159,7 +162,7 @@ void register_socket_symbols(mrb_state *mrb){
  *	127.0.0.1:*
  *	website.com:8080
  */
-void parse_address(mrb_state *state, const char *addr_str, ENetAddress *address) {
+bool parse_address(const char *addr_str, ENetAddress *address, const char *error) {
     int host_i = 0, port_i = 0;
     char host_str[128] = {0};
     char port_str[32] = {0};
@@ -168,7 +171,10 @@ void parse_address(mrb_state *state, const char *addr_str, ENetAddress *address)
     char *c = (char *)addr_str;
 
     while (*c != 0) {
-        if (host_i >= 128 || port_i >= 32 ) print::print(state, print::PRINT_ERROR, "Hostname too long");
+        if (host_i >= 128 || port_i >= 32 ){
+            error = "Hostname too long";
+            return true;
+        }
         if (scanning_port) {
             port_str[port_i++] = *c;
         } else {
@@ -183,14 +189,21 @@ void parse_address(mrb_state *state, const char *addr_str, ENetAddress *address)
     host_str[host_i] = '\0';
     port_str[port_i] = '\0';
 
-    if (host_i == 0) print::print(state, print::PRINT_ERROR, "Failed to parse address");
-    if (port_i == 0) print::print(state, print::PRINT_ERROR, "Missing port in address");
+    if (host_i == 0){
+        error = "Failed to parse address";
+        return true;
+    }
+    if (port_i == 0){
+        error = "Missing port in address";
+        return true;
+    }
 
     if (strcmp("*", host_str) == 0) {
         address->host = ENET_HOST_ANY;
     } else {
         if (enet_address_set_host(address, host_str) != 0) {
-            print::print(state, print::PRINT_ERROR, "Failed to resolve host name");
+            error = "Failed to resolve host name";
+            return true;
         }
     }
 
@@ -199,6 +212,8 @@ void parse_address(mrb_state *state, const char *addr_str, ENetAddress *address)
     } else {
         address->port = atoi(port_str);
     }
+
+        return false;
 }
 
 /**
@@ -281,59 +296,6 @@ ENetPacket *read_packet(mrb_state *state, int idx, enet_uint8 *channel_id) {
         return nullptr;
 }
 
-/**
- * Create a new host
- * Args:
- *	address (nil for client)
- *	[peer_count = 64]
- *	[channel_count = 1]
- *	[in_bandwidth = 0]
- *	[out_bandwidth = 0]
- */
-mrb_value host_create(mrb_state *state, mrb_value self) {
-    ENetHost *host;
-    size_t peer_count = 64, channel_count = 1;
-    enet_uint32 in_bandwidth = 0, out_bandwidth = 0;
-
-    bool have_address = false;
-    ENetAddress address;
-
-    mrb_value h;
-    API->mrb_get_args(state, "H", &h);
-
-    auto rb_address = cext_hash_get(state, h, "address");
-    const char* str_address = "";
-
-    if(cext_is_string(state, rb_address)){
-        have_address = true;
-        str_address = cext_to_string(state, rb_address);
-        parse_address(state, str_address, &address);
-    }
-
-    peer_count = cext_hash_get_int_default(state, h, "peer_count", (mrb_int)peer_count);
-    channel_count = cext_hash_get_int_default(state, h, "channel_count", (mrb_int)channel_count);
-    in_bandwidth = cext_hash_get_int_default(state, h, "in_bandwidth", in_bandwidth);
-    out_bandwidth = cext_hash_get_int_default(state, h, "out_bandwidth", out_bandwidth);
-
-    host = enet_host_create(have_address? &address : nullptr, peer_count,
-                            channel_count, in_bandwidth, out_bandwidth);
-
-    if (host == nullptr) {
-        return print::print(state, print::PRINT_ERROR, "enet: failed to create host (already listening?)");
-        //return 2;
-    }
-
-    // TODO: add this
-    //*(ENetHost**)lua_newuserdata(state, sizeof(void*)) = host;
-    //luaL_getmetatable(state, "enet_host");
-    //lua_setmetatable(state, -2);
-
-    socket_enet_host = host;
-
-    //return CEXT_INT(state, 1);
-    return mrb_nil_value();
-}
-
 mrb_value linked_version(mrb_state *state, mrb_value self) {
     char* buffer;
     size_t size;
@@ -351,34 +313,6 @@ mrb_value linked_version(mrb_state *state, mrb_value self) {
     auto result = API->mrb_str_new(state, buffer, size);
     FREE(buffer);
     return result;
-}
-
-/**
- * Serice a host
- * Args:
- *	timeout
- *
- * Return
- *	nil on no event
- *	an event table on event
- */
-mrb_value host_service(mrb_state *state, mrb_value self) {
-    ENetHost *host = get_enet_host();
-    if (!host) {
-        return print::print(state, print::PRINT_ERROR, "Tried to index a nil host!");
-    }
-    ENetEvent event;
-    int timeout = 0, out;
-
-    out = enet_host_service(host, &event, timeout);
-    if (out == 0){
-        return mrb_nil_value();
-    }
-    if (out < 0){
-        return print::print(state, print::PRINT_ERROR, "Error during service");
-    }
-
-    return event_to_hash(state, &event);
 }
 
 /**
@@ -421,45 +355,6 @@ mrb_value host_compress_with_range_coder(mrb_state *state) {
     return CEXT_INT(state, 1);
 }
 */
-
-/**
- * Connect a host to an address
- * Args:
- *	the address
- *	[channel_count = 1]
- *	[data = 0]
- */
-mrb_value host_connect(mrb_state *state, mrb_value self) {
-    ENetHost *host = get_enet_host();
-    if (!host) {
-        return print::print(state, print::PRINT_ERROR, "Tried to index a nil host!");
-    }
-    ENetAddress address;
-    ENetPeer *peer;
-
-    enet_uint32 data = 0;
-    size_t channel_count = 1;
-
-    mrb_value h;
-    API->mrb_get_args(state, "H", &h);
-
-    auto str_address = cext_hash_get_string_default(state, h, "address", "");
-
-    parse_address(state, str_address, &address);
-
-    channel_count = cext_hash_get_int_default(state, h, "channel_count", (mrb_int)channel_count);
-    data = cext_hash_get_int_default(state, h, str_data, (mrb_int)data);
-
-    peer = enet_host_connect(host, &address, channel_count, data);
-
-    if (peer == nullptr) {
-        return print::print(state, print::PRINT_ERROR, "Failed to create peer");
-    }
-
-        get_peer_key(peer);
-
-    return mrb_nil_value();
-}
 
 mrb_value host_flush(mrb_state *state, mrb_value self) {
     ENetHost *host = get_enet_host();
@@ -839,52 +734,55 @@ mrb_value peer_send(mrb_state *state, mrb_value self) {
 
 void socket_open_enet(mrb_state* state) {
     struct RClass *FFI = API->mrb_module_get(state, "FFI");
-    struct RClass *module_socket = API->mrb_module_get_under(state, FFI, "DRSocket");
-    struct RClass *module = API->mrb_module_get_under(state, module_socket, "Raw");
+    struct RClass *module = API->mrb_module_get_under(state, FFI, "DRSocket");
+    //struct RClass *module = API->mrb_module_get_under(state, module_socket, "Raw");
 
     enet_initialize();
     //atexit(enet_deinitialize); TODO: use this
 
-    //IMPORTANT: to use "define_function" macro, "state" and "module" MUST be defined in this function
+    API->mrb_define_module_function(state, module, "__peer_initialize", {[](mrb_state *state, mrb_value self) {
+        mrb_int is_host;
+        mrb_value rb_address;
+        API->mrb_get_args(state, "iS", &is_host, &rb_address);
+        auto address = cext_to_string(state, rb_address);
+        auto peer = new DRPeer(state, is_host != 0, address);
+        dr_peers[peer_counter] = peer;
+        auto to_return = peer_counter;
+        peer_counter++;
+        return API->mrb_int_value(state, to_return);
+    }}, MRB_ARGS_REQ(2));
 
-    // host
-    define_function(host_create, 1);
-    define_function(host_connect, 1);
-    define_function(host_service, 0);
-    define_function(host_check_events, 0);
-    undefine_function(enet_host_compress_with_range_coder, 0); //TODO: implement this
-    define_function(host_flush, 0);
-    define_function(host_broadcast, 0);
-    define_function(host_channel_limit, 1);
-    define_function(host_bandwidth_limit, 2);
-    define_function(host_total_sent_data, 0);
-    define_function(host_total_received_data, 0);
-    define_function(host_service_time, 0);
-    define_function(host_peer_count, 0);
-    undefine_function(host_get_peer, 0); //TODO: implement this
-    define_function(host_get_socket_address, 0);
+    API->mrb_define_module_function(state, module, "__get_next_event", {[](mrb_state *state, mrb_value self) {
+        mrb_int peer_id;
+        API->mrb_get_args(state, "i", &peer_id);
+        auto peer = dr_peers[peer_id];
+        auto event = peer->GetNextEvent(state);
+        return event;
+    }}, MRB_ARGS_REQ(1));
 
-    // peer
-    define_function(peer_connect_id, 0);
-    define_function(peer_disconnect, 0);
-    define_function(peer_disconnect_now, 0);
-    define_function(peer_disconnect_later, 0);
-    define_function(peer_index, 0);
-    define_function(peer_ping, 0);
-    define_function(peer_ping_interval, 1);
-    define_function(peer_reset, 0);
-    define_function(peer_send, 2);
-    define_function(peer_state, 0);
-    undefine_function(peer_receive, 1); //TODO: implement this
-    undefine_function(peer_round_trip_time, 1); //TODO: implement this
-    undefine_function(last_round_trip_time, 1); //TODO: implement this
-    define_function(peer_throttle_configure, 3);
-    define_function(peer_timeout, 3);
+    API->mrb_define_module_function(state, module, "__send", {[](mrb_state *state, mrb_value self) {
+        mrb_int peer_id;
+        mrb_value data;
+        mrb_int receiver;
+        API->mrb_get_args(state, "iHi", &peer_id, &data, &receiver);
+        auto peer = dr_peers[peer_id];
+        peer->Send(state, data, receiver);
+        return mrb_nil_value();
+    }}, MRB_ARGS_REQ(3));
+
+    API->mrb_define_module_function(state, module, "__connect", {[](mrb_state *state, mrb_value self) {
+        mrb_int peer_id;
+        mrb_value rb_address;
+        API->mrb_get_args(state, "iS", &peer_id, &rb_address);
+        auto peer = dr_peers[peer_id];
+        peer->Connect(state, API->mrb_string_cstr(state, rb_address));
+        return mrb_nil_value();
+    }}, MRB_ARGS_REQ(2));
 
     // debug
     define_debug_function(file::debug_serialized_to_file, "__debug_save", 1);
 
-    API->mrb_define_module_function(state, module_socket, "get_build_info", {[](mrb_state *mrb, mrb_value self) {
+    API->mrb_define_module_function(state, module, "get_build_info", {[](mrb_state *mrb, mrb_value self) {
         auto enet_version = linked_version(mrb, self);
         auto result = API->mrb_hash_new(mrb);
         cext_hash_set_kstr(mrb, result, "enet", enet_version);
@@ -913,7 +811,7 @@ void socket_open_enet(mrb_state* state) {
         return result;
     }}, MRB_ARGS_REQ(0));
 
-    API->mrb_define_module_function(state, module_socket, "check_allocated_memory",
+    API->mrb_define_module_function(state, module, "check_allocated_memory",
                                         {[](mrb_state *mrb, mrb_value self) {
 #ifdef DEBUG
                                             lyniat_memory_check_allocated_memory();
@@ -923,12 +821,115 @@ void socket_open_enet(mrb_state* state) {
                                             return mrb_nil_value();
                                         }}, MRB_ARGS_REQ(0));
 
-    API->mrb_define_module_function(state, module_socket, "__free_cycle_memory",
+    API->mrb_define_module_function(state, module, "__free_cycle_memory",
                                         {[](mrb_state *mrb, mrb_value self) {
                                             FREE_CYCLE
                                             return mrb_nil_value();
                                         }}, MRB_ARGS_REQ(0));
 
-    register_test_functions(state, module_socket);
+    register_test_functions(state, module);
+}
+
+    DRPeer::DRPeer(mrb_state *state, bool is_host, std::string address){
+        m_is_host = is_host;
+        m_address = address;
+
+        size_t peer_count = 64, channel_count = 1;
+        enet_uint32 in_bandwidth = 0, out_bandwidth = 0;
+
+        ENetAddress e_address;
+
+        const char *error;
+        if(m_is_host) {
+            if (parse_address(m_address.c_str(), &e_address, error)) {
+                print::print(state, print::PRINT_ERROR, error);
+                return;
+            }
+        }
+
+        m_host = enet_host_create(m_is_host? &e_address : nullptr, peer_count,
+                                channel_count, in_bandwidth, out_bandwidth);
+
+        if (m_host == nullptr) {
+            print::print(state, print::PRINT_ERROR, "enet: failed to create host (already listening?)");
+            return;
+        }
+}
+    void DRPeer::Connect(mrb_state *state, std::string address){
+        if(m_is_host){
+            print::print(state, print::PRINT_ERROR, "Server is not allowed to explicitly connect to a client!");
+            return;
+        }
+
+        if (!m_host) {
+            print::print(state, print::PRINT_ERROR, "Tried to index a nil host!");
+            return;
+        }
+        ENetAddress e_address;
+
+        enet_uint32 data = 0;
+        size_t channel_count = 1;
+
+        const char* error;
+        if(parse_address(address.c_str(), &e_address, error)){
+            print::print(state, print::PRINT_ERROR, error);
+            return;
+        }
+
+        m_server = enet_host_connect(m_host, &e_address, channel_count, data);
+
+        if (m_server == nullptr) {
+            print::print(state, print::PRINT_ERROR, "Failed to create peer");
+            return;
+        }
+}
+
+    mrb_value DRPeer::GetNextEvent(mrb_state *state){
+        if (!m_host) {
+            return print::print(state, print::PRINT_ERROR, "Tried to index a nil host!");
+        }
+        ENetEvent event;
+        int timeout = 0, out;
+
+        out = enet_host_service(m_host, &event, timeout);
+        if (out == 0){
+            return mrb_nil_value();
+        }
+        if (out < 0){
+            return print::print(state, print::PRINT_ERROR, "Error during service");
+        }
+
+        return event_to_hash(state, &event);
+}
+
+    void DRPeer::Send(mrb_state *state, mrb_value data, mrb_int receiver){
+        //auto sym_flag = cext_hash_get_sym_default(state, h, str_flag, socket_order_flag_reliable);
+        //auto channel_id = cext_hash_get_int_default(state, h, str_channel, 0);
+        auto sym_flag = socket_order_flag_reliable;
+        auto channel_id = 0;
+
+        auto flag = ENET_PACKET_FLAG_RELIABLE;
+
+        if(sym_flag == socket_order_flag_unreliable){
+            flag = ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT;
+        }else if(sym_flag == socket_order_flag_unsequenced){
+            flag = ENET_PACKET_FLAG_UNSEQUENCED;
+        }
+
+        auto buffer = new buffer::BinaryBuffer();
+        serialize::serialize_data(buffer, state, data);
+
+        ENetPacket * packet = enet_packet_create (buffer->Data(),
+                                                  buffer->Size(),
+                                                  flag);
+
+        ENetPeer *peer = get_enet_peer(receiver);
+
+        int ret = enet_peer_send(peer, channel_id, packet);
+        if (ret < 0) {
+            enet_packet_destroy(packet);
+        }
+
+        delete buffer;
 }
 }
