@@ -234,11 +234,11 @@ namespace lyniat::socket::serialize {
             st_counter_t array_size;
             binary_buffer->Read(&array_size);
 
-            mrb_value array = API->mrb_ary_new(state);
+            mrb_value array = API->mrb_ary_new_capa(state, array_size);
 
             for (st_counter_t i = 0; i < array_size; ++i) {
                 mrb_value data = deserialize_data(binary_buffer, state);
-                API->mrb_ary_push(state, array, data);
+                API->mrb_ary_set(state, array, i, data);
             }
             return array;
         }
