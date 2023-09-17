@@ -820,7 +820,7 @@ void socket_open_enet(mrb_state* state) {
     }}, MRB_ARGS_REQ(2));
 
     // debug
-    define_debug_function(file::debug_serialized_to_file, "__debug_save", 1);
+    API->mrb_define_module_function(state, module, "__debug_save", file::debug_serialized_to_file, MRB_ARGS_REQ(1));
 
     API->mrb_define_module_function(state, module, "get_build_info", {[](mrb_state *mrb, mrb_value self) {
         auto enet_version = linked_version(mrb, self);
