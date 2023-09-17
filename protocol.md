@@ -45,7 +45,7 @@ legend:
 | ST_UNDEF (unused) | 8  |
 | ST_NIL            | 9  |
 
-every ruby types uses one byte of identification
+every ruby types uses one byte for identification
 
 example data:
 ```
