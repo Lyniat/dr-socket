@@ -45,7 +45,7 @@ def tick args
         if $gtk.argv.include?("server")
             puts "Starting application as server."
             args.state.socket_type = :server
-            $server = Server.new(6789)
+            $server = Server.new(6789, false) # Server.new(port, only_local_network?)
         else
             puts "Starting application as client."
             args.state.socket_type = :client

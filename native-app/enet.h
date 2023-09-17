@@ -130,7 +130,7 @@ namespace lyniat::socket::enet {
 
     class DRPeer {
     public:
-        DRPeer(mrb_state *state, bool is_host, std::string address);
+        DRPeer(mrb_state *state, bool is_host, mrb_int port, bool only_local);
         ~DRPeer();
 
         void Connect(mrb_state *state, std::string address);
@@ -138,7 +138,9 @@ namespace lyniat::socket::enet {
         void Send(mrb_state *state, mrb_value data, mrb_int receiver);
     private:
         bool m_is_host;
+        bool m_only_local;
         std::string m_address;
+        mrb_int m_port;
         ENetHost *m_host;
         ENetPeer *m_server;
     };

@@ -753,7 +753,7 @@ void socket_open_enet(mrb_state* state) {
 
     class_dr_peer = API->mrb_define_class_under(state, module, "Peer", state->object_class);
     MRB_SET_INSTANCE_TT(class_dr_peer, MRB_TT_DATA);
-    API->mrb_define_method(state, class_dr_peer, "initialize", dr_peer_initialize, MRB_ARGS_REQ(2));
+    API->mrb_define_method(state, class_dr_peer, "initialize", dr_peer_initialize, MRB_ARGS_REQ(3));
 
     API->mrb_define_method(state, class_dr_peer, "next_event", {[](mrb_state *state, mrb_value self) {
         auto peer_id = get_peer_id(state, self);
@@ -789,16 +789,14 @@ void socket_open_enet(mrb_state* state) {
     //atexit(enet_deinitialize); TODO: use this
 
     API->mrb_define_module_function(state, module, "__peer_initialize", {[](mrb_state *state, mrb_value self) {
-        mrb_int is_host;
-        mrb_value rb_address;
-        API->mrb_get_args(state, "iS", &is_host, &rb_address);
-        auto address = cext_to_string(state, rb_address);
-        auto peer = new DRPeer(state, is_host != 0, address);
+        mrb_int is_host, port, only_local;
+        API->mrb_get_args(state, "iii", &is_host, &port, &only_local);
+        auto peer = new DRPeer(state, is_host != 0, port, only_local != 0);
         dr_peers[peer_counter] = peer;
         auto to_return = peer_counter;
         peer_counter++;
         return API->mrb_int_value(state, to_return);
-    }}, MRB_ARGS_REQ(2));
+    }}, MRB_ARGS_REQ(3));
 
     API->mrb_define_module_function(state, module, "__get_next_event", {[](mrb_state *state, mrb_value self) {
         mrb_int peer_id;
@@ -878,20 +876,25 @@ void socket_open_enet(mrb_state* state) {
     register_test_functions(state, module);
 }
 
-    DRPeer::DRPeer(mrb_state *state, bool is_host, std::string address){
+    DRPeer::DRPeer(mrb_state *state, bool is_host, mrb_int port, bool only_local){
         m_is_host = is_host;
-        m_address = address;
+        m_port = port;
+        m_only_local = only_local;
 
         size_t peer_count = 64, channel_count = 1;
         enet_uint32 in_bandwidth = 0, out_bandwidth = 0;
 
         ENetAddress e_address;
-
-        const char *error;
-        if(m_is_host) {
-            if (parse_address(m_address.c_str(), &e_address, error)) {
-                print::print(state, print::PRINT_ERROR, error);
-                return;
+        if(m_is_host){
+            if(only_local){
+                const char *error;
+                if(parse_address(fmt::format("{}:{}", "localhost", m_port).c_str(), &e_address, error)){
+                    print::print(state, print::PRINT_ERROR, error);
+                    return;
+                }
+            }else{
+                e_address.host = ENET_HOST_ANY;
+                e_address.port = port;
             }
         }
 
@@ -986,11 +989,9 @@ void socket_open_enet(mrb_state* state) {
 }
 
     mrb_value dr_peer_initialize(mrb_state *state, mrb_value self) {
-        mrb_int is_host;
-        mrb_value rb_address;
-        API->mrb_get_args(state, "iS", &is_host, &rb_address);
-        auto address = cext_to_string(state, rb_address);
-        auto peer = new DRPeer(state, is_host != 0, address);
+        mrb_int is_host, port, only_local;
+        API->mrb_get_args(state, "iii", &is_host, &port, &only_local);
+        auto peer = new DRPeer(state, is_host != 0, port, only_local != 0);
         dr_peers[peer_counter] = peer;
         auto to_return = peer_counter;
         peer_counter++;

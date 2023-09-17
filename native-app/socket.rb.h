@@ -9,13 +9,13 @@ include FFI
 module DRSocket
     class Client < Peer
         def initialize
-            super(0, "")
+            super(0, 0, 0)
         end
     end
 
     class Server < Peer
-        def initialize port
-            super(1, "localhost:#{port}")
+        def initialize port, only_local
+            super(1, port, only_local ? 1 : 0)
         end
 
         undef connect
