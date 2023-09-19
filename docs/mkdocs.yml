@@ -7,5 +7,3 @@ nav:
       - 'Docs': 'overview/docs.md'
   - 'API':
     - 'raw': 'api/raw.md'
-    - 'server': 'api/raw/server.md'
-    - 'client': 'api/raw/client.md'
