@@ -41,9 +41,14 @@ WIP
 WIP
 
 # About
-Currently only proof-of-concept but I plan to make this a useful thing 😉
-
 You can help by joining the official [DragonRuby Discord](https://dragonruby.org/toolkit/game/chat) and visit the *#oss-dr-socket* channel.
+
+# Resources
+- [network transfer protocol](https://github.com/Lyniat/dr-socket/blob/new_api/protocol.md)
+
+# Special thanks and contributors
+- Podo from the [DragonRuby Discord](https://dragonruby.org/toolkit/game/chat)
+- [levi](https://github.com/leviongit)
 
 # License
 - See [LICENSE](LICENSE)
