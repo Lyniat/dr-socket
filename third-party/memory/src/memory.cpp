@@ -107,7 +107,7 @@ const char *lyniat_memory_check_allocated_memory() {
     result.append(" memory leaks in total.\n");
     result.append(output);
 
-    return STRDUP_CYCLE(output.c_str());
+    return STRDUP_CYCLE(result.c_str());
 }
 
 void *lyniat_memory_malloc_cycle(size_t size) {
