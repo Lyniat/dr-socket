@@ -224,9 +224,9 @@ uint64_t compute_peer_key(ENetPeer *peer)
 uint64_t get_peer_key(ENetPeer *peer) {
     uint64_t key = compute_peer_key(peer);
 
-    if(!socket_enet_peers.count(key)){
+    // if(!socket_enet_peers.count(key)){
         socket_enet_peers[key] = {peer, false};
-    }
+    // }
 
     return key;
 }
@@ -688,9 +688,10 @@ mrb_value peer_timeout(mrb_state *state, mrb_value self) {
 
 //TODO: accept optional value like in https://leafo.net/lua-enet/#peerdisconnectdata
 mrb_value peer_disconnect(mrb_state *state, mrb_value self) {
-    ENetPeer *peer = get_enet_peer(1);
+    mrb_int peer_id;
+    API->mrb_get_args(state, "i", &peer_id);
+    ENetPeer *peer = get_enet_peer(peer_id);
 
-    //enet_uint32 data = lua_gettop(l) > 1 ? (int) luaL_checknumber(state, 2) : 0;
     enet_uint32 data = 0;
     enet_peer_disconnect(peer, data);
     return mrb_nil_value();
@@ -866,9 +867,9 @@ void socket_open_enet(mrb_state* state) {
 
     // peer
     define_function(peer_connect_id, 0);
-    define_function(peer_disconnect, 0);
-    define_function(peer_disconnect_now, 0);
-    define_function(peer_disconnect_later, 0);
+    define_function(peer_disconnect, 1);
+    undefine_function(peer_disconnect_now, 0);
+    undefine_function(peer_disconnect_later, 0);
     define_function(peer_index, 0);
     define_function(peer_ping, 0);
     define_function(peer_ping_interval, 1);
