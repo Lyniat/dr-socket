@@ -24,6 +24,7 @@
 
 #include <map>
 #include <vector>
+#include <string>
 
 #include "../include/lyniat/memory.h"
 
@@ -88,17 +89,25 @@ void lyniat_memory_debug_free(void *ptr, const char *info) {
     free(ptr);
 }
 
-void lyniat_memory_check_allocated_memory() {
+const char *lyniat_memory_check_allocated_memory() {
     if (memory_allocations.size() == 0) {
-        printf("No memory allocated.\n");
-        return;
+        return "No memory allocated.\n";
     }
 
+    std::string output = "";
     int i = 0;
     for (auto const &mem: memory_allocations) {
         ++i;
-        printf("(%i) Memory allocated from %s.\n", i, mem.second);
+        output.append("Memory allocated from ");
+        output.append(mem.second);
+        output.append(".\n");
     }
+    std::string result = "";
+    result.append(std::to_string(i));
+    result.append(" memory leaks in total.\n");
+    result.append(output);
+
+    return STRDUP_CYCLE(output.c_str());
 }
 
 void *lyniat_memory_malloc_cycle(size_t size) {

@@ -78,7 +78,7 @@ const char *lyniat_memory_debug_strdup_cycle(const char* ptr, const char *info);
 
 void lyniat_memory_debug_free(void *ptr, const char *info);
 
-void lyniat_memory_check_allocated_memory();
+const char *lyniat_memory_check_allocated_memory();
 
 void lyniat_memory_free_cycle_memory();
 
