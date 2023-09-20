@@ -852,35 +852,35 @@ void socket_open_enet(mrb_state* state) {
     define_function(host_create, 1);
     define_function(host_connect, 1);
     define_function(host_service, 0);
-    define_function(host_check_events, 0);
-    undefine_function(enet_host_compress_with_range_coder, 0); //TODO: implement this
-    define_function(host_flush, 0);
-    define_function(host_broadcast, 0);
-    define_function(host_channel_limit, 1);
-    define_function(host_bandwidth_limit, 2);
-    define_function(host_total_sent_data, 0);
-    define_function(host_total_received_data, 0);
-    define_function(host_service_time, 0);
-    define_function(host_peer_count, 0);
-    undefine_function(host_get_peer, 0); //TODO: implement this
-    define_function(host_get_socket_address, 0);
+    undefine_function(host_check_events, 0);
+    undefine_function(enet_host_compress_with_range_coder, 0);
+    undefine_function(host_flush, 0);
+    undefine_function(host_broadcast, 0);
+    undefine_function(host_channel_limit, 1);
+    undefine_function(host_bandwidth_limit, 2);
+    undefine_function(host_total_sent_data, 0);
+    undefine_function(host_total_received_data, 0);
+    undefine_function(host_service_time, 0);
+    undefine_function(host_peer_count, 0);
+    undefine_function(host_get_peer, 0);
+    undefine_function(host_get_socket_address, 0);
 
     // peer
-    define_function(peer_connect_id, 0);
+    undefine_function(peer_connect_id, 0);
     define_function(peer_disconnect, 1);
     undefine_function(peer_disconnect_now, 0);
     undefine_function(peer_disconnect_later, 0);
-    define_function(peer_index, 0);
-    define_function(peer_ping, 0);
-    define_function(peer_ping_interval, 1);
-    define_function(peer_reset, 0);
+    undefine_function(peer_index, 0);
+    undefine_function(peer_ping, 0);
+    undefine_function(peer_ping_interval, 1);
+    undefine_function(peer_reset, 0);
     define_function(peer_send, 2);
-    define_function(peer_state, 0);
+    undefine_function(peer_state, 0);
     undefine_function(peer_receive, 1); //TODO: implement this
     undefine_function(peer_round_trip_time, 1); //TODO: implement this
     undefine_function(last_round_trip_time, 1); //TODO: implement this
-    define_function(peer_throttle_configure, 3);
-    define_function(peer_timeout, 3);
+    undefine_function(peer_throttle_configure, 3);
+    undefine_function(peer_timeout, 3);
 
     // debug
     define_debug_function(file::debug_serialized_to_file, "__debug_save", 1);
@@ -917,11 +917,12 @@ void socket_open_enet(mrb_state* state) {
     API->mrb_define_module_function(state, module_socket, "check_allocated_memory",
                                         {[](mrb_state *mrb, mrb_value self) {
 #ifdef DEBUG
-                                            lyniat_memory_check_allocated_memory();
+                                            auto str = lyniat_memory_check_allocated_memory();
+                                            return API->mrb_str_new_cstr(mrb, str);
 #else
                                             print::print(mrb, "check_allocated_memory is only available in a Debug build.");
-#endif
                                             return mrb_nil_value();
+#endif
                                         }}, MRB_ARGS_REQ(0));
 
     API->mrb_define_module_function(state, module_socket, "__free_cycle_memory",
