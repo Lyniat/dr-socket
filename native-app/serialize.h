@@ -7,6 +7,10 @@
 
 namespace lyniat::socket::serialize {
 
+    static const unsigned char FLAG_SERVER =   0b00000001;
+    static const unsigned char FLAG_CLIENTS =  0b00000010;
+    static const unsigned char FLAG_SELF =     0b00000100;
+
     typedef unsigned short int st_counter_t;
 
     enum serialized_type : unsigned char {
