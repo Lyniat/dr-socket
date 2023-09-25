@@ -3,21 +3,24 @@
 #define DR_SOCKET_SOCKET_RB_H
 
 static const char * ruby_socket_code = R"(
+
+include FFI
+
 module DRSocket
-    class << self
-        def raw
-            DRSocket::Raw
+    class Client < Peer
+        def initialize
+            super(0, 0, 0)
         end
     end
-end
 
-module DRSocket::Raw
-    class << self
+    class Server < Peer
+        def initialize port, only_local
+            super(1, port, only_local ? 1 : 0)
+        end
 
+        undef connect
     end
 end
-
-$socket = DRSocket
 
 module GTK
 class Runtime

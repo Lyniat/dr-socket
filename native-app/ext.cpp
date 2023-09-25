@@ -23,8 +23,6 @@ void drb_register_c_extensions_with_api(mrb_state *state, struct drb_api_t *api)
     api::drb_runtime = API->mrb_class_get_under(state, api::drb_gtk, "Runtime");
     api::drb_console = API->mrb_class_get_under(state, api::drb_gtk, "Console");
 
-    API->mrb_load_string(state, ruby_socket_code);
-
 #if !defined(META_PLATFORM)     || \
 !defined(META_TYPE)             || \
 !defined(META_GIT_HASH)         || \

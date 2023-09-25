@@ -6,14 +6,9 @@
 #include <map>
 #include <enet/enet.h>
 #include <vector>
+#include <string>
 
 namespace lyniat::socket::enet {
-
-    typedef enum socket_type_t {
-        NONE,
-        CLIENT,
-        SERVER
-    } socket_type_t;
 
     typedef struct socket_peer_t {
         ENetPeer *peer;
@@ -25,13 +20,9 @@ namespace lyniat::socket::enet {
         mrb_value data;
     } socket_event_t;
 
-    extern socket_type_t current_type;
-
     extern ENetHost *socket_enet_host;
-    extern ENetPeer *socket_enet_peer;
 
     extern std::map<uint64_t, socket_peer_t> socket_enet_peers;
-    extern std::vector<socket_event_t> socket_enet_events;
 
     extern mrb_value socket_event_receive;
     extern mrb_value socket_event_connect;
@@ -77,17 +68,11 @@ namespace lyniat::socket::enet {
 
     ENetPacket *read_packet(mrb_state *l, int idx, enet_uint8 *channel_id);
 
-    mrb_value host_create(mrb_state *l, mrb_value self);
-
     mrb_value linked_version(mrb_state *l, mrb_value self);
-
-    mrb_value host_service(mrb_state *l, mrb_value self);
 
     mrb_value host_check_events(mrb_state *l, mrb_value self);
 
     mrb_value host_compress_with_range_coder(mrb_state *l);
-
-    mrb_value host_connect(mrb_state *l, mrb_value self);
 
     mrb_value host_flush(mrb_state *l, mrb_value self);
 
@@ -140,6 +125,36 @@ namespace lyniat::socket::enet {
     mrb_value peer_receive(mrb_state *l, mrb_value self);
 
     mrb_value peer_send(mrb_state *l, mrb_value self);
+
+    mrb_int get_peer_id(mrb_state *state, mrb_value self);
+
+    class DRPeer {
+    public:
+        DRPeer(mrb_state *state, bool is_host, mrb_int port, bool only_local);
+        ~DRPeer();
+
+        void Connect(mrb_state *state, std::string address);
+        void Disconnect(mrb_state *state, mrb_int peer_to_disconnect);
+        mrb_value GetNextEvent(mrb_state *state);
+        void Send(mrb_state *state, mrb_value data, mrb_int receiver);
+    private:
+        bool m_is_host;
+        bool m_only_local;
+        std::string m_address;
+        mrb_int m_port;
+        ENetHost *m_host;
+        ENetPeer *m_server;
+    };
+
+    extern std::map<mrb_int, DRPeer*> dr_peers;
+    extern mrb_int peer_counter;
+
+    typedef struct DRPeerStruct {
+        mrb_int internal_peer_id;
+    } DRPeerStruct;
+
+    extern struct mrb_data_type dr_peer_struct;
+    extern mrb_value dr_peer_initialize(mrb_state *state, mrb_value self);
 
 }
 
