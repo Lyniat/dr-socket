@@ -250,9 +250,9 @@ uint64_t compute_peer_key(ENetPeer *peer)
 uint64_t get_peer_key(ENetPeer *peer) {
     uint64_t key = compute_peer_key(peer);
 
-    if(!socket_enet_peers.count(key)){
-        socket_enet_peers[key] = {peer, false};
-    }
+    //if(!socket_enet_peers.count(key)){
+    socket_enet_peers[key] = {peer, false};
+    //}
 
     return key;
 }
@@ -783,6 +783,15 @@ void socket_open_enet(mrb_state* state) {
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(2));
 
+    API->mrb_define_method(state, class_dr_peer, "disconnect", {[](mrb_state *state, mrb_value self) {
+        mrb_int peer_to_disconnect;
+        API->mrb_get_args(state, "i", &peer_to_disconnect);
+        auto peer_id = get_peer_id(state, self);
+        auto peer = dr_peers[peer_id];
+        peer->Disconnect(state, peer_to_disconnect);
+        return mrb_nil_value();
+    }}, MRB_ARGS_REQ(1));
+
     API->mrb_load_string(state, ruby_socket_code);
 
     enet_initialize();
@@ -937,6 +946,12 @@ void socket_open_enet(mrb_state* state) {
             print::print(state, print::PRINT_ERROR, "Failed to create peer");
             return;
         }
+}
+
+    void DRPeer::Disconnect(mrb_state *state, mrb_int peer_to_disconnect){
+        ENetPeer *peer = get_enet_peer(peer_to_disconnect);
+        enet_uint32 data = 0;
+        enet_peer_disconnect(peer, data);
 }
 
     mrb_value DRPeer::GetNextEvent(mrb_state *state){

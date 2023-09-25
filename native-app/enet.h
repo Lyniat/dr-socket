@@ -134,6 +134,7 @@ namespace lyniat::socket::enet {
         ~DRPeer();
 
         void Connect(mrb_state *state, std::string address);
+        void Disconnect(mrb_state *state, mrb_int peer_to_disconnect);
         mrb_value GetNextEvent(mrb_state *state);
         void Send(mrb_state *state, mrb_value data, mrb_int receiver);
     private:
