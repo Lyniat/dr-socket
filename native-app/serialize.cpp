@@ -31,6 +31,51 @@ namespace lyniat::socket::serialize {
                 return ST_UNDEF;
         }
     }
+
+    void append_var_size(buffer::BinaryBuffer *binary_buffer, var_size_t number){
+        auto value = number.value;
+        if(number.type == B1){
+            binary_buffer->Append((unsigned char)(value >> 24));
+        }
+        else if(number.type == B2){
+            binary_buffer->Append((unsigned char)(value >> 24));
+            binary_buffer->Append((unsigned char)(value >> 16));
+        }
+        else if(number.type == B3){
+            binary_buffer->Append((unsigned char)(value >> 24));
+            binary_buffer->Append((unsigned char)(value >> 16));
+            binary_buffer->Append((unsigned char)(value >> 8));
+        }
+        else if(number.type == B4){
+            binary_buffer->Append((unsigned char)(value >> 24));
+            binary_buffer->Append((unsigned char)(value >> 16));
+            binary_buffer->Append((unsigned char)(value >> 8));
+            binary_buffer->Append((unsigned char)(value >> 0));
+        }
+    }
+
+    unsigned int read_var_size(buffer::BinaryBuffer *binary_buffer){
+        unsigned char d0, d1, d2, d3;
+        auto start_pos = binary_buffer->CurrentPos();
+        binary_buffer->Read(&d0);
+        binary_buffer->Read(&d1);
+        binary_buffer->Read(&d2);
+        binary_buffer->Read(&d3);
+        unsigned int number = (d0 << 24) | (d1 << 16) | (d2 << 8) | d3;
+        auto deserialized_number = deserialize_var_size(number);
+        binary_buffer->SetReadPos(start_pos + deserialized_number.type);
+        return deserialized_number.value;
+        /*
+        auto start_pos = binary_buffer->CurrentPos();
+        unsigned int temp;
+        binary_buffer->Read(&temp);
+        auto deserialized_num = deserialize_var_size(temp);
+        auto value = deserialized_num.value;
+        auto size = deserialized_num.type;
+        binary_buffer->SetReadPos(start_pos + size);
+        return value;
+         */
+    }
     
     bool add_hash_key(buffer::BinaryBuffer *binary_buffer, mrb_state *state, mrb_value key){
         auto key_type = get_st(key);
@@ -38,15 +83,17 @@ namespace lyniat::socket::serialize {
         if(key_type == ST_STRING) {
             auto s_key = API->mrb_string_cstr(state, key);
             binary_buffer->Append(key_type);
-            st_counter_t str_len = strlen(s_key) + 1;
-            binary_buffer->Append(str_len);
+            auto str_len = strlen(s_key) + 1;
+            auto var_str_len = serialize_var_size(str_len);
+            append_var_size(binary_buffer, var_str_len);
             binary_buffer->Append((void*)s_key, str_len);
         }
         else if(key_type == ST_SYMBOL) {
             auto s_key = API->mrb_sym_name(state, API->mrb_obj_to_sym(state, key));
             binary_buffer->Append(key_type);
-            st_counter_t str_len = strlen(s_key) + 1;
-            binary_buffer->Append(str_len);
+            auto str_len = strlen(s_key) + 1;
+            auto var_str_len = serialize_var_size(str_len);
+            append_var_size(binary_buffer, var_str_len);
             binary_buffer->Append((void*)s_key, str_len);
         }
         else if(key_type == ST_INT) {
@@ -72,17 +119,15 @@ namespace lyniat::socket::serialize {
         mrb_value key;
 
         if(key_type == ST_STRING) {
-            st_counter_t key_size;
-            binary_buffer->Read(&key_size);
-            auto str_ptr = MALLOC_CYCLE(key_size);
-            binary_buffer->Read(str_ptr, key_size);
+            auto data_size = read_var_size(binary_buffer);
+            auto str_ptr = MALLOC_CYCLE(data_size);
+            binary_buffer->Read(str_ptr, data_size);
             key = API->mrb_str_new_cstr(state, (const char*)str_ptr);
         }
         else if(key_type == ST_SYMBOL) {
-            st_counter_t key_size;
-            binary_buffer->Read(&key_size);
-            auto str_ptr = MALLOC_CYCLE(key_size);
-            binary_buffer->Read(str_ptr, key_size);
+            auto data_size = read_var_size(binary_buffer);
+            auto str_ptr = MALLOC_CYCLE(data_size);
+            binary_buffer->Read(str_ptr, data_size);
             key = mrb_symbol_value(cext_sym(state, (const char*)str_ptr));
         }
         else if(key_type == ST_INT) {
@@ -126,17 +171,19 @@ namespace lyniat::socket::serialize {
 
         else if(stype == ST_STRING){
             const char *string = cext_to_string(state, data);
-            st_counter_t str_len = strlen(string) + 1;
+            auto str_len = strlen(string) + 1;
+            auto var_str_len = serialize_var_size(str_len);
             binary_buffer->Append(type);
-            binary_buffer->Append(str_len);
+            append_var_size(binary_buffer, var_str_len);
             binary_buffer->Append((void*)string, str_len);
         }
 
         else if(stype == ST_SYMBOL){
             const char *string = API->mrb_sym_name(state, API->mrb_obj_to_sym(state, data));
-            st_counter_t str_len = strlen(string) + 1;
+            auto str_len = strlen(string) + 1;
+            auto var_str_len = serialize_var_size(str_len);
             binary_buffer->Append(type);
-            binary_buffer->Append(str_len);
+            append_var_size(binary_buffer, var_str_len);
             binary_buffer->Append((void*)string, str_len);
         }
 
@@ -193,17 +240,27 @@ namespace lyniat::socket::serialize {
             return mrb_nil_value();
         }
         else if (type == ST_STRING) {
-            st_counter_t data_size;
-            binary_buffer->Read(&data_size);
+            unsigned int raw_data_size;
+            auto start_pos = binary_buffer->CurrentPos();
+            binary_buffer->Read(&raw_data_size);
+            auto deserialized_number = deserialize_var_size(raw_data_size);
+            auto data_size = deserialized_number.value;
+            auto byte_size = deserialized_number.type;
             auto str_ptr = MALLOC_CYCLE(data_size);
+            binary_buffer->SetReadPos(start_pos + byte_size);
             binary_buffer->Read(str_ptr, data_size);
             mrb_value data = API->mrb_str_new(state, (const char*)str_ptr, data_size - 1);
             return data;
         }
         else if (type == ST_SYMBOL) {
-            st_counter_t data_size;
-            binary_buffer->Read(&data_size);
+            unsigned int raw_data_size;
+            auto start_pos = binary_buffer->CurrentPos();
+            binary_buffer->Read(&raw_data_size);
+            auto deserialized_number = deserialize_var_size(raw_data_size);
+            auto data_size = deserialized_number.value;
+            auto byte_size = deserialized_number.type;
             auto str_ptr = MALLOC_CYCLE(data_size);
+            binary_buffer->SetReadPos(start_pos + byte_size);
             binary_buffer->Read(str_ptr, data_size);
             mrb_value data = API->mrb_symbol_value(API->mrb_intern_check(state, (const char*)str_ptr, data_size - 1));
             return data;
@@ -244,5 +301,70 @@ namespace lyniat::socket::serialize {
         }
 
         return mrb_nil_value();
+    }
+
+    void serialize_new_data(buffer::BinaryBuffer *binary_buffer, mrb_state *mrb, mrb_value data){
+        binary_buffer->Append(PROTOCOL_V);
+        st_address_t flags_start = 0;
+        binary_buffer->Append(flags_start);
+        serialize_data(binary_buffer, mrb, data);
+        binary_buffer->Append(ST_SKIP); // prevent error when reading var_size_t at last position
+        binary_buffer->Append(ST_SKIP);
+        binary_buffer->Append(ST_SKIP);
+    }
+
+    mrb_value deserialize_new_data(buffer::BinaryBuffer *binary_buffer, mrb_state *mrb){
+        unsigned short int protocol_v;
+        binary_buffer->Read(&protocol_v);
+        st_address_t flags_start;
+        binary_buffer->Read(&flags_start);
+        return deserialize_data(binary_buffer, mrb);
+    }
+
+    var_size_t serialize_var_size(unsigned int size){
+        if(size <= SIZE_1B){
+            auto val = size << 24;
+            return {B1, val};
+        } else if (size <= SIZE_2B){
+            auto val = ((((size & 0x00003F00) << 1) | ((size & 0x00000080) << 1) | (size & 0x0000007F)) << 16) | 0x80000000;
+            return {B2, val};
+        } else if (size <= SIZE_3B){
+            auto val = ((((size & 0x001F0000) << 2) | ((size & 0x0000C000) << 2) |
+                    ((size & 0x00003F00) << 1) | ((size & 0x00000080) << 1) | (size & 0x0000007F)) << 8) | 0x80800000;
+            return {B3, val};
+        } else if (size <= SIZE_4B){
+            auto val= ((((size & 0x0F000000) << 3) | ((size & 0x00E00000) << 3) |
+                    ((size & 0x001F0000) << 2) | ((size & 0x0000C000) << 2) |
+                    ((size & 0x00003F00) << 1) | ((size & 0x00000080) << 1) | (size & 0x0000007F))) | 0x80808000;
+            return {B4, val};
+        } else {
+            return {B_INAVLID, 0};
+        }
+    }
+
+    var_size_t deserialize_var_size(unsigned int size){
+        if((size & 0x80000000) != 0){
+            if((size & 0x00800000) != 0){
+                if((size & 0x00008000) != 0){
+                    auto value = size;
+                    auto val = ((value >> 3) & 0x0F000000) | ((value >> 3) & 0x00E00000) |
+                            ((value >> 2) & 0x001F0000) | ((value >> 2) & 0x0000C000) |
+                            ((value >> 1) & 0x00003F00) | ((value >> 1) & 0x00000080) | (value & 0x0000007F);
+                    return {B4, val};
+                }
+
+                auto value = size >> 8;
+                auto val = ((value >> 2) & 0x001F0000) | ((value >> 2) & 0x0000C000) |
+                           ((value >> 1) & 0x00003F00) | ((value >> 1) & 0x00000080) | (value & 0x0000007F);
+                return {B3, val};
+            }
+
+            auto value = size >> 16;
+            auto val = ((value >> 1) & 0x00003F00) | ((value >> 1) & 0x00000080) | (value & 0x0000007F);
+            return {B2, val};
+        }
+
+        auto val = size >> 24;
+        return {B1, val};
     }
 }

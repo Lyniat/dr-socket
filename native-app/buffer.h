@@ -50,6 +50,8 @@ namespace lyniat::socket::buffer {
 
         unsigned int CurrentPos();
 
+        void SetReadPos(unsigned int pos);
+
         //void Append(void *data, int size);
 
     private:

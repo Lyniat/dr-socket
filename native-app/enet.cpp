@@ -283,7 +283,7 @@ mrb_value event_to_hash(mrb_state *state, ENetEvent *event) {
             cext_hash_set_ksym(state, hash, str_channel, API->mrb_int_value(state, event->channelID));
 
             buffer = new buffer::BinaryBuffer(event->packet->data, event->packet->dataLength, false);
-            data = serialize::deserialize_data(buffer, state);
+            data = serialize::deserialize_new_data(buffer, state);
 
             cext_hash_set_ksym(state, hash, str_data, data);
 
@@ -726,7 +726,7 @@ mrb_value peer_send(mrb_state *state, mrb_value self) {
     }
 
     auto buffer = new buffer::BinaryBuffer();
-    serialize::serialize_data(buffer, state, data);
+    serialize::serialize_new_data(buffer, state, data);
 
     ENetPacket * packet = enet_packet_create (buffer->Data(),
                                               buffer->Size(),
@@ -989,7 +989,7 @@ void socket_open_enet(mrb_state* state) {
         }
 
         auto buffer = new buffer::BinaryBuffer();
-        serialize::serialize_data(buffer, state, data);
+        serialize::serialize_new_data(buffer, state, data);
 
         ENetPacket * packet = enet_packet_create (buffer->Data(),
                                                   buffer->Size(),

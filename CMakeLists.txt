@@ -89,6 +89,7 @@ include_directories(
         ${THIRD_PARTY_INSTALL_DIR}/enet/include
         ${THIRD_PARTY_INSTALL_DIR}/memory/include
         ${THIRD_PARTY_INSTALL_DIR}/fmt/include
+        ${THIRD_PARTY_INSTALL_DIR}/z-ng/include
 )
 
 add_library(${THIS_PROJECT_NAME} SHARED
@@ -117,11 +118,13 @@ target_link_directories(${THIS_PROJECT_NAME} PRIVATE
         ${THIRD_PARTY_INSTALL_DIR}/enet/lib
         ${THIRD_PARTY_INSTALL_DIR}/memory/lib
         ${THIRD_PARTY_INSTALL_DIR}/fmt/lib
+        ${THIRD_PARTY_INSTALL_DIR}/z-ng/lib
 )
 
 if (WIN32)
 target_link_libraries(${THIS_PROJECT_NAME}
         PRIVATE
+        z-ng
         fmt
         memory
         enet
@@ -131,6 +134,7 @@ target_link_libraries(${THIS_PROJECT_NAME}
 else()
 target_link_libraries(${THIS_PROJECT_NAME}
         PRIVATE
+        z-ng
         fmt
         memory
         enet
@@ -232,6 +236,22 @@ ExternalProject_Add(
         "${THIRD_PARTY_BUILD_DIR}"
         "${THIRD_PARTY_INSTALL_DIR}/enet"
         CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        ${EXTERNAL_EXTRA_FLAGS}
+)
+
+ExternalProject_Add(
+        z-ng
+        URL https://github.com/zlib-ng/zlib-ng/archive/refs/tags/2.1.3.tar.gz
+        URL_HASH SHA256=d20e55f89d71991c59f1c5ad1ef944815e5850526c0d9cd8e504eaed5b24491a
+        DOWNLOAD_DIR ${THIRD_PARTY_DOWNLOAD_DIR}/zlib-ng
+        BINARY_DIR ${THIRD_PARTY_BIN_DIR}/z-ng
+        SOURCE_DIR ${THIRD_PARTY_SRC_DIR}/z-ng
+        CMAKE_COMMAND ${THIRD_PARTY_CMAKE_COMMAND}
+        CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_INSTALL_DIR}/z-ng
+        -DZLIB_ENABLE_TESTS=OFF
+        -DWITH_GTEST=OFF
+        -DBUILD_SHARED_LIBS=FALSE
         ${EXTERNAL_EXTRA_FLAGS}
 )
 

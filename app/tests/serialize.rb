@@ -42,8 +42,21 @@ end
 def test_serialize args, assert
     test_data = get_test_data
     data = __test_serialize(test_data)
+    __debug_save(data, "debug_data.bin")
     result = __test_deserialize(data)
     diff = hash_diff(test_data, result)
 
     assert.true! diff.empty?, "Test hashes differ! #{diff}"
+end
+
+def test_serialize_number args, assert
+    numbers_to_test = [0, 1, 23, 270, 345, 16789, 46789, 1048575, 1148575, 2097152]
+
+    numbers_to_test.each do |n|
+        test_data = n
+        data = __test_serialize_number(test_data)
+        result = __test_deserialize_number(data)
+
+        assert.true! test_data == result, "Test with number #{test_data} differs! res: #{result}, size: #{data.size}, bin: #{data.bin_str}"
+    end
 end

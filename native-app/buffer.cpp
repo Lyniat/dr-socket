@@ -59,6 +59,9 @@ namespace lyniat::socket::buffer {
     }
 
     unsigned int BinaryBuffer::CurrentPos(){
+        if(read_only){
+            return current_read_pos;
+        }
         return current_pos;
     }
 
@@ -99,6 +102,12 @@ namespace lyniat::socket::buffer {
         if(current_read_pos + size <= b_size){
             memcpy(data, (char*)ptr + current_read_pos, size);
             current_read_pos += size;
+        }
+    }
+
+    void BinaryBuffer::SetReadPos(unsigned int pos) {
+        if(pos < b_size){
+            current_read_pos = pos;
         }
     }
 }
