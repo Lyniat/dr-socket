@@ -7,6 +7,7 @@
 #include <enet/enet.h>
 #include <vector>
 #include <string>
+#include <queue>
 
 namespace lyniat::socket::enet {
 
@@ -19,6 +20,14 @@ namespace lyniat::socket::enet {
         ENetPeer *peer;
         mrb_value data;
     } socket_event_t;
+
+    typedef struct simplified_enet_event_t {
+        uint64_t peer_key;
+        ENetEventType type;
+        enet_uint8 channel_id;
+        enet_uint8 *data;
+        size_t data_length;
+    } simplified_enet_event_t;
 
     extern ENetHost *socket_enet_host;
 
@@ -64,7 +73,7 @@ namespace lyniat::socket::enet {
 
     uint64_t get_peer_key(ENetPeer *peer);
 
-    mrb_value event_to_hash(mrb_state *l, ENetEvent *event);
+    mrb_value event_to_hash(mrb_state *l, simplified_enet_event_t *event);
 
     ENetPacket *read_packet(mrb_state *l, int idx, enet_uint8 *channel_id);
 
@@ -146,6 +155,7 @@ namespace lyniat::socket::enet {
         mrb_int m_port;
         ENetHost *m_host;
         ENetPeer *m_server;
+        std::queue<simplified_enet_event_t*> filtered_events;
     };
 
     extern std::map<mrb_int, DRPeer*> dr_peers;

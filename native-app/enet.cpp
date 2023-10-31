@@ -124,6 +124,8 @@ constexpr const char* str_channel = "channel";
 constexpr const char* str_data = "data";
 constexpr const char* str_flag = "flag";
 
+constexpr const enet_uint8 DEFAULT_CHANNEL = 8;
+
 ENetHost* get_enet_host(){
     return socket_enet_host;
 }
@@ -257,19 +259,13 @@ uint64_t get_peer_key(ENetPeer *peer) {
     return key;
 }
 
-mrb_value event_to_hash(mrb_state *state, ENetEvent *event) {
+mrb_value event_to_hash(mrb_state *state, simplified_enet_event_t *event) {
     auto hash = API->mrb_hash_new(state);
 
-    ENetPeer *peer;
     mrb_value data;
     buffer::BinaryBuffer *buffer;
 
-
-    if (event->peer) {
-        peer = event->peer;
-        uint64_t key = get_peer_key(peer);
-        cext_hash_set_ksym(state, hash, str_peer, API->mrb_int_value(state, (mrb_int)key));
-    }
+    cext_hash_set_ksym(state, hash, str_peer, API->mrb_int_value(state, (mrb_int)event->peer_key));
 
     switch (event->type) {
         case ENET_EVENT_TYPE_CONNECT:
@@ -280,14 +276,13 @@ mrb_value event_to_hash(mrb_state *state, ENetEvent *event) {
             break;
         case ENET_EVENT_TYPE_RECEIVE:
             cext_hash_set_ksym(state, hash, str_event_type, socket_event_receive);
-            cext_hash_set_ksym(state, hash, str_channel, API->mrb_int_value(state, event->channelID));
+            cext_hash_set_ksym(state, hash, str_channel, API->mrb_int_value(state, event->channel_id));
 
-            buffer = new buffer::BinaryBuffer(event->packet->data, event->packet->dataLength, false);
+            buffer = new buffer::BinaryBuffer(event->data, event->data_length, false);
             data = serialize::deserialize_data(buffer, state);
 
             cext_hash_set_ksym(state, hash, str_data, data);
 
-            enet_packet_destroy(event->packet);
             delete buffer;
             break;
         case ENET_EVENT_TYPE_NONE:
@@ -324,24 +319,6 @@ mrb_value linked_version(mrb_state *state, mrb_value self) {
     auto result = API->mrb_str_new(state, buffer, size);
     FREE(buffer);
     return result;
-}
-
-/**
- * Dispatch a single event if available
- */
-mrb_value host_check_events(mrb_state *state, mrb_value self) {
-    ENetHost *host = get_enet_host();
-    if (!host) {
-        return print::print(state, print::PRINT_ERROR, "Tried to index a nil host!");
-    }
-    ENetEvent event;
-    int out = enet_host_check_events(host, &event);
-    if (out == 0) return mrb_nil_value();
-    if (out < 0) return print::print(state, print::PRINT_ERROR, "Error checking event");
-
-        event_to_hash(state, &event);
-    //return CEXT_INT(state, 1);
-    return mrb_nil_value();
 }
 
 /**
@@ -971,37 +948,73 @@ void socket_open_enet(mrb_state* state) {
         int timeout = 0, out;
 
         out = enet_host_service(m_host, &event, timeout);
-        if (out == 0){
+
+        while(out > 0){
+            // filter events
+
+            if(event.channelID < DEFAULT_CHANNEL){
+
+            }
+
+            // check for special events
+            switch (event.type) {
+                case ENET_EVENT_TYPE_CONNECT:
+                    if(!m_is_host){
+                        m_is_connected = true;
+                    }
+                    break;
+                case ENET_EVENT_TYPE_DISCONNECT:
+                    if(!m_is_host){
+                        m_is_connected = false;
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            // create simplified copy of event
+            auto peer_key = get_peer_key(event.peer);
+            auto copy = (simplified_enet_event_t*)MALLOC(sizeof(simplified_enet_event_t));
+            copy->peer_key = peer_key;
+            copy->type = event.type;
+            copy->channel_id = event.channelID;
+
+            auto copied_data = (enet_uint8 *)MALLOC(event.packet->dataLength);
+            memcpy(copied_data, event.packet->data, event.packet->dataLength);
+
+            copy->data = copied_data;
+            copy->data_length = event.packet->dataLength;
+
+            enet_packet_destroy(event.packet);
+
+            filtered_events.push(copy);
+
+            out = enet_host_service(m_host, &event, timeout);
+        }
+
+        if (filtered_events.empty()){
             return mrb_nil_value();
         }
+
+        /*
         if (out < 0){
             return print::print(state, print::PRINT_ERROR, "Error during service");
         }
+         */
 
-        // check for special events
-        switch (event.type) {
-            case ENET_EVENT_TYPE_CONNECT:
-                if(!m_is_host){
-                    m_is_connected = true;
-                }
-                break;
-            case ENET_EVENT_TYPE_DISCONNECT:
-                if(!m_is_host){
-                    m_is_connected = false;
-                }
-                break;
-            default:
-                break;
-        }
-
-        return event_to_hash(state, &event);
+        auto front = filtered_events.front();
+        auto result = event_to_hash(state, front);
+        filtered_events.pop();
+        FREE(front->data);
+        FREE(front);
+        return result;
 }
 
     void DRPeer::Send(mrb_state *state, mrb_value data, mrb_int receiver){
         //auto sym_flag = cext_hash_get_sym_default(state, h, str_flag, socket_order_flag_reliable);
         //auto channel_id = cext_hash_get_int_default(state, h, str_channel, 0);
         auto sym_flag = socket_order_flag_reliable;
-        auto channel_id = 0;
+        auto channel_id = DEFAULT_CHANNEL;
 
         auto flag = ENET_PACKET_FLAG_RELIABLE;
 
