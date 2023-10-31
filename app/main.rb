@@ -21,6 +21,8 @@ def update_server args
 end
 
 def update_client args
+    puts("connected?: #{$client.connected?}") if args.state.tick_count % 180 == 0
+
     event = $client.next_event
     while event
         puts event.type
