@@ -793,6 +793,13 @@ void socket_open_enet(mrb_state* state) {
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(1));
 
+    API->mrb_define_method(state, class_dr_peer, "connected?", {[](mrb_state *state, mrb_value self) {
+        auto peer_id = get_peer_id(state, self);
+        auto peer = dr_peers[peer_id];
+        auto is_connected = peer->IsConnected();
+        return mrb_bool_value(is_connected);
+    }}, MRB_ARGS_REQ(0));
+
     API->mrb_load_string(state, ruby_socket_code);
 
     enet_initialize();
@@ -971,6 +978,22 @@ void socket_open_enet(mrb_state* state) {
             return print::print(state, print::PRINT_ERROR, "Error during service");
         }
 
+        // check for special events
+        switch (event.type) {
+            case ENET_EVENT_TYPE_CONNECT:
+                if(!m_is_host){
+                    m_is_connected = true;
+                }
+                break;
+            case ENET_EVENT_TYPE_DISCONNECT:
+                if(!m_is_host){
+                    m_is_connected = false;
+                }
+                break;
+            default:
+                break;
+        }
+
         return event_to_hash(state, &event);
 }
 
@@ -1003,6 +1026,14 @@ void socket_open_enet(mrb_state* state) {
         }
 
         delete buffer;
+}
+
+    bool DRPeer::IsConnected(){
+        if(!m_is_host){
+            return m_is_connected;
+        }else{
+            return false;
+        }
 }
 
     mrb_value dr_peer_initialize(mrb_state *state, mrb_value self) {

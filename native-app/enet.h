@@ -137,9 +137,11 @@ namespace lyniat::socket::enet {
         void Disconnect(mrb_state *state, mrb_int peer_to_disconnect);
         mrb_value GetNextEvent(mrb_state *state);
         void Send(mrb_state *state, mrb_value data, mrb_int receiver);
+        bool IsConnected();
     private:
         bool m_is_host;
         bool m_only_local;
+        bool m_is_connected;
         std::string m_address;
         mrb_int m_port;
         ENetHost *m_host;
