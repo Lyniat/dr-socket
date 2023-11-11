@@ -45,20 +45,9 @@ namespace lyniat::socket::enet {
     extern mrb_sym socket_order_flag_unsequenced;
     extern mrb_sym socket_order_flag_unreliable;
 
-
-    void init_enet_bindings();
-
     void register_socket_symbols(mrb_state *state);
 
     void socket_open_enet(mrb_state *state);
-
-    ENetHost *get_enet_host();
-
-    ENetPeer *get_enet_peer();
-
-    void parse_address(mrb_state *l, const char *addr_str, ENetAddress *address);
-
-    size_t find_peer_index(mrb_state *l, ENetHost *enet_host, ENetPeer *peer);
 
     uint64_t compute_peer_key(ENetPeer *peer);
 
@@ -69,62 +58,6 @@ namespace lyniat::socket::enet {
     ENetPacket *read_packet(mrb_state *l, int idx, enet_uint8 *channel_id);
 
     mrb_value linked_version(mrb_state *l, mrb_value self);
-
-    mrb_value host_check_events(mrb_state *l, mrb_value self);
-
-    mrb_value host_compress_with_range_coder(mrb_state *l);
-
-    mrb_value host_flush(mrb_state *l, mrb_value self);
-
-    mrb_value host_broadcast(mrb_state *l, mrb_value self);
-
-    mrb_value host_channel_limit(mrb_state *l, mrb_value self);
-
-    mrb_value host_bandwidth_limit(mrb_state *l, mrb_value self);
-
-    mrb_value host_get_socket_address(mrb_state *l, mrb_value self);
-
-    mrb_value host_total_sent_data(mrb_state *l, mrb_value self);
-
-    mrb_value host_total_received_data(mrb_state *l, mrb_value self);
-
-    mrb_value host_service_time(mrb_state *l, mrb_value self);
-
-    mrb_value host_peer_count(mrb_state *l, mrb_value self);
-
-    mrb_value host_get_peer(mrb_state *l, mrb_value self);
-
-    mrb_value host_gc(mrb_state *l);
-
-    mrb_value peer_tostring(mrb_state *l);
-
-    mrb_value peer_ping(mrb_state *l, mrb_value self);
-
-    mrb_value peer_throttle_configure(mrb_state *l, mrb_value self);
-
-    int peer_round_trip_time(mrb_state *l);
-
-    int peer_last_round_trip_time(mrb_state *l);
-
-    mrb_value peer_ping_interval(mrb_state *l, mrb_value self);
-
-    mrb_value peer_timeout(mrb_state *l, mrb_value self);
-
-    mrb_value peer_disconnect(mrb_state *l, mrb_value self);
-
-    mrb_value peer_disconnect_now(mrb_state *l, mrb_value self);
-
-    mrb_value peer_disconnect_later(mrb_state *l, mrb_value self);
-
-    mrb_value peer_index(mrb_state *l, mrb_value self);
-
-    mrb_value peer_state(mrb_state *l, mrb_value self);
-
-    mrb_value peer_connect_id(mrb_state *l, mrb_value self);
-
-    mrb_value peer_receive(mrb_state *l, mrb_value self);
-
-    mrb_value peer_send(mrb_state *l, mrb_value self);
 
     mrb_int get_peer_id(mrb_state *state, mrb_value self);
 
