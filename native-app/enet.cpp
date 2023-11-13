@@ -111,6 +111,11 @@ constexpr const char* str_channel = "channel";
 constexpr const char* str_data = "data";
 constexpr const char* str_flag = "flag";
 
+std::string create_address(const char *ip, mrb_int port){
+    auto str = std::string(ip) + ":" + std::to_string(port);
+    return str;
+}
+
 ENetPeer* get_enet_peer(uint64_t id){
     auto peer = socket_enet_peers[id];
     if(peer.authorized || true){ //TODO: add real check
@@ -314,7 +319,7 @@ void socket_open_enet(mrb_state* state) {
         API->mrb_get_args(state, "Si", &rb_address, &port);
         auto peer_id = get_peer_id(state, self);
         auto peer = dr_peers[peer_id];
-        auto address = fmt::format("{}:{}", API->mrb_string_cstr(state, rb_address), port);
+        auto address = create_address(API->mrb_string_cstr(state, rb_address), port);
         peer->Connect(state, address);
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(2));
@@ -450,7 +455,7 @@ void socket_open_enet(mrb_state* state) {
         if(m_is_host){
             if(only_local){
                 const char *error;
-                if(parse_address(fmt::format("{}:{}", "localhost", m_port).c_str(), &e_address, error)){
+                if(parse_address(create_address("localhost", m_port).c_str(), &e_address, error)){
                     print::print(state, print::PRINT_ERROR, error);
                     return;
                 }
