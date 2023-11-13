@@ -333,11 +333,25 @@ void socket_open_enet(mrb_state* state) {
         return mrb_nil_value();
     }}, MRB_ARGS_REQ(1));
 
+    API->mrb_define_method(state, class_dr_peer, "shutdown", {[](mrb_state *state, mrb_value self) {
+        auto peer_id = get_peer_id(state, self);
+        auto peer = dr_peers[peer_id];
+        peer->Shutdown(state);
+        return mrb_nil_value();
+    }}, MRB_ARGS_REQ(0));
+
     API->mrb_define_method(state, class_dr_peer, "connected?", {[](mrb_state *state, mrb_value self) {
         auto peer_id = get_peer_id(state, self);
         auto peer = dr_peers[peer_id];
         auto is_connected = peer->IsConnected();
         return mrb_bool_value(is_connected);
+    }}, MRB_ARGS_REQ(0));
+
+    API->mrb_define_method(state, class_dr_peer, "active?", {[](mrb_state *state, mrb_value self) {
+        auto peer_id = get_peer_id(state, self);
+        auto peer = dr_peers[peer_id];
+        auto is_active = peer->IsActive();
+        return mrb_bool_value(is_active);
     }}, MRB_ARGS_REQ(0));
 
     API->mrb_load_string(state, ruby_socket_code);
@@ -474,8 +488,9 @@ void socket_open_enet(mrb_state* state) {
         }
 }
     DRPeer::~DRPeer(){
-
-
+        if (m_host != nullptr) {
+            enet_host_destroy(m_host);
+        }
 }
     void DRPeer::Connect(mrb_state *state, std::string address){
         if(m_is_host){
@@ -511,6 +526,13 @@ void socket_open_enet(mrb_state* state) {
         enet_uint32 data = 0;
         enet_peer_disconnect(peer, data);
 }
+
+    void DRPeer::Shutdown(mrb_state *state){
+        if (m_host != nullptr) {
+            enet_host_destroy(m_host);
+            m_host = nullptr;
+        }
+    }
 
     mrb_value DRPeer::GetNextEvent(mrb_state *state){
         if (!m_host) {
@@ -580,10 +602,16 @@ void socket_open_enet(mrb_state* state) {
     bool DRPeer::IsConnected(){
         if(!m_is_host){
             return m_is_connected;
-        }else{
-            return false;
         }
+        return false;
 }
+
+    bool DRPeer::IsActive(){
+        if(m_host != nullptr){
+            return true;
+        }
+        return false;
+    }
 
     mrb_value dr_peer_initialize(mrb_state *state, mrb_value self) {
         mrb_int is_host, port, only_local;

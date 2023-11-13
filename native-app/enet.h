@@ -68,9 +68,11 @@ namespace lyniat::socket::enet {
 
         void Connect(mrb_state *state, std::string address);
         void Disconnect(mrb_state *state, mrb_int peer_to_disconnect);
+        void Shutdown(mrb_state *state);
         mrb_value GetNextEvent(mrb_state *state);
         void Send(mrb_state *state, mrb_value data, mrb_int receiver);
         bool IsConnected();
+        bool IsActive();
     private:
         bool m_is_host;
         bool m_only_local;
