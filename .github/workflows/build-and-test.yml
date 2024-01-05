@@ -1,10 +1,12 @@
 name: Compile and Test
 
+
 on:
   pull_request:
   push:
     branches:
       - master
+
 
 jobs:
   compile-and-test-ubuntu:
@@ -20,6 +22,7 @@ jobs:
           dr-socket-path: ./dr-socket
           compile-command: ./build-unix.sh --target linux
           artifact-name: linux-amd64
+
   compile-and-test-macos:
     name: Compile & Test (macOS)
     runs-on: macos-latest
@@ -33,6 +36,7 @@ jobs:
           dr-socket-path: ./dr-socket
           compile-command: ./build-unix.sh --target macos --fat-binary
           artifact-name: macos
+
   compile-and-test-windows:
     name: Compile & Test (Windows)
     runs-on: windows-latest
