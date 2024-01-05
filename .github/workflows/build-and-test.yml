@@ -15,6 +15,12 @@ jobs:
       - uses: kfischer-okarin/download-dragonruby@v1
         with:
           license_tier: pro
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Install python dependencies
+        run: pip install psutil
       - name: Compile
         run: ./build-unix.sh --target linux
   compile-and-test-macos:
@@ -25,16 +31,30 @@ jobs:
       - uses: kfischer-okarin/download-dragonruby@v1
         with:
           license_tier: pro
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Install python dependencies
+        run: pip install psutil
       - name: Compile
         run: ./build-unix.sh --target macos --fat-binary
   compile-and-test-windows:
     name: Compile & Test (Windows)
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: kfischer-okarin/download-dragonruby@v1
         with:
           license_tier: pro
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Install python dependencies
+        run: pip install psutil
       - name: Compile
         run: ./build-unix.sh --target windows
-        shell: bash
