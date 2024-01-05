@@ -19,6 +19,7 @@ jobs:
         run: ./build-unix.sh --target linux
       - uses: actions/upload-artifact@v4
         with:
+          name: linux-amd64
           path: native/
   compile-and-test-macos:
     name: Compile & Test (macOS)
@@ -32,6 +33,7 @@ jobs:
         run: ./build-unix.sh --target macos --fat-binary
       - uses: actions/upload-artifact@v4
         with:
+          name: macos
           path: native/
   compile-and-test-windows:
     name: Compile & Test (Windows)
@@ -48,4 +50,5 @@ jobs:
         run: ./build-unix.sh --target windows
       - uses: actions/upload-artifact@v4
         with:
+          name: windows-amd64
           path: native/
