@@ -17,6 +17,9 @@ jobs:
           license_tier: pro
       - name: Compile
         run: ./build-unix.sh --target linux
+      - uses: actions/upload-artifact@v4
+        with:
+          path: native/
   compile-and-test-macos:
     name: Compile & Test (macOS)
     runs-on: macos-latest
@@ -27,6 +30,9 @@ jobs:
           license_tier: pro
       - name: Compile
         run: ./build-unix.sh --target macos --fat-binary
+      - uses: actions/upload-artifact@v4
+        with:
+          path: native/
   compile-and-test-windows:
     name: Compile & Test (Windows)
     runs-on: windows-latest
@@ -40,3 +46,6 @@ jobs:
           license_tier: pro
       - name: Compile
         run: ./build-unix.sh --target windows
+      - uses: actions/upload-artifact@v4
+        with:
+          path: native/
