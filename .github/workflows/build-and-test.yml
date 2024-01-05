@@ -12,7 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/compile-and-test
+      - name: Compile and Test
+        uses: ./.github/actions/compile-and-test
         with:
           compile-command: ./build-unix.sh --target linux
           artifact-name: linux-amd64
@@ -21,7 +22,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/compile-and-test
+      - name: Compile and Test
+        uses: ./.github/actions/compile-and-test
         with:
           compile-command: ./build-unix.sh --target macos --fat-binary
           artifact-name: macos
@@ -30,7 +32,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/compile-and-test
+      - name: Compile and Test
+        uses: ./.github/actions/compile-and-test
         with:
           compile-command: ./build-unix.sh --target windows
           artifact-name: windows-amd64
