@@ -2,9 +2,9 @@ name: Compile and Test
 description: Compile and test the dr-socket extension
 
 inputs:
-  build-command:
+  compile-command:
     type: string
-    description: Build command
+    description: Compile command
     required: true
   artifact-name:
     type: string
@@ -19,7 +19,7 @@ runs:
       with:
         license_tier: pro
     - name: Compile
-      run: ${{ inputs.build-command }}
+      run: ${{ inputs.compile-command }}
       shell: bash
     - uses: actions/upload-artifact@v4
       with:

@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: ./.github/actions/compile-and-test
         with:
-          build-command: ./build-unix.sh --target linux
+          compile-command: ./build-unix.sh --target linux
           artifact-name: linux-amd64
   compile-and-test-macos:
     name: Compile & Test (macOS)
@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: ./.github/actions/compile-and-test
         with:
-          build-command: ./build-unix.sh --target macos --fat-binary
+          compile-command: ./build-unix.sh --target macos --fat-binary
           artifact-name: macos
   compile-and-test-windows:
     name: Compile & Test (Windows)
@@ -29,5 +29,5 @@ jobs:
     steps:
       - uses: ./.github/actions/compile-and-test
         with:
-          build-command: ./build-unix.sh --target windows
+          compile-command: ./build-unix.sh --target windows
           artifact-name: windows-amd64
