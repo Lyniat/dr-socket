@@ -11,44 +11,23 @@ jobs:
     name: Compile & Test (Linux)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: kfischer-okarin/download-dragonruby@v1
+      - uses: ./.github/actions/compile-and-test
         with:
-          license_tier: pro
-      - name: Compile
-        run: ./build-unix.sh --target linux
-      - uses: actions/upload-artifact@v4
-        with:
-          name: linux-amd64
-          path: native/
+          build-command: ./build-unix.sh --target linux
+          artifact-name: linux-amd64
   compile-and-test-macos:
     name: Compile & Test (macOS)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: kfischer-okarin/download-dragonruby@v1
+      - uses: ./.github/actions/compile-and-test
         with:
-          license_tier: pro
-      - name: Compile
-        run: ./build-unix.sh --target macos --fat-binary
-      - uses: actions/upload-artifact@v4
-        with:
-          name: macos
-          path: native/
+          build-command: ./build-unix.sh --target macos --fat-binary
+          artifact-name: macos
   compile-and-test-windows:
     name: Compile & Test (Windows)
     runs-on: windows-latest
-    defaults:
-      run:
-        shell: bash
     steps:
-      - uses: actions/checkout@v4
-      - uses: kfischer-okarin/download-dragonruby@v1
+      - uses: ./.github/actions/compile-and-test
         with:
-          license_tier: pro
-      - name: Compile
-        run: ./build-unix.sh --target windows
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-amd64
-          path: native/
+          build-command: ./build-unix.sh --target windows
+          artifact-name: windows-amd64

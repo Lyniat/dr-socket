@@ -1,0 +1,27 @@
+name: Compile and Test
+description: Compile and test the dr-socket extension
+
+inputs:
+  build-command:
+    type: string
+    description: Build command
+    required: true
+  artifact-name:
+    type: string
+    description: Name of the saved artifact
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+    - uses: kfischer-okarin/download-dragonruby@v1
+      with:
+        license_tier: pro
+    - name: Compile
+      run: ${{ inputs.build-command }}
+      shell: bash
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: native/
