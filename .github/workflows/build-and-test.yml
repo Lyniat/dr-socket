@@ -1,0 +1,40 @@
+name: Compile and Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  compile-and-test-ubuntu:
+    name: Compile & Test (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: kfischer-okarin/download-dragonruby@v1
+        with:
+          license_tier: pro
+      - name: Compile
+        run: ./build-unix.sh --target linux
+  compile-and-test-macos:
+    name: Compile & Test (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: kfischer-okarin/download-dragonruby@v1
+        with:
+          license_tier: pro
+      - name: Compile
+        run: ./build-unix.sh --target macos --fat-binary
+  compile-and-test-windows:
+    name: Compile & Test (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: kfischer-okarin/download-dragonruby@v1
+        with:
+          license_tier: pro
+      - name: Compile
+        run: ./build-unix.sh --target windows
+        shell: bash
