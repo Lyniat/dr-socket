@@ -24,10 +24,14 @@ runs:
     - name: Compile
       run: |
         ${{ inputs.compile-command }}
-        mv native $GITHUB_WORKSPACE/native
+
+        # Move native dir to dist since upload-artifact produces a zip with relative paths from the root
+        # This will result in a zip with native/{{platform}}/ folder structure for easy unzipping/merging
+        mkdir -p dist
+        mv native $GITHUB_WORKSPACE/dist/native
       working-directory: ${{ inputs.dr-socket-path }}
       shell: bash
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.artifact-name }}
-        path: native/
+        path: dist/
