@@ -31,6 +31,15 @@ runs:
         mv native $GITHUB_WORKSPACE/dist/native
       working-directory: ${{ inputs.dr-socket-path }}
       shell: bash
+    - name: Run Tests
+      env:
+        # For headless DragonRuby execution
+        SDL_AUDIODRIVER: dummy
+        SDL_VIDEODRIVER: dummy
+      run: |
+        ./dragonruby ${{ inputs.dr-socket-path }} --eval app/tests/test.rb --no-tick | tee tests.log
+        grep -Fq "[Game] 0 test(s) failed." tests.log
+      shell: bash
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.artifact-name }}
