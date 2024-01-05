@@ -7,6 +7,11 @@ on:
     branches:
       - master
 
+defaults:
+  # DR will sometimes just hang when the test fails.
+  # Usually setting the timeout directly on the test step would be better but since timeout-minutes is not yet
+  # supported inside composite actions (https://github.com/actions/runner/issues/1979) use job timeout as workaround
+  timeout-minutes: 3
 
 jobs:
   compile-and-test-ubuntu:
