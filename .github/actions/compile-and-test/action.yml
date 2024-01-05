@@ -25,6 +25,9 @@ runs:
       run: |
         ${{ inputs.compile-command }}
 
+        pwd
+        ls -la
+        ls -la native
         # Move native dir to dist since upload-artifact produces a zip with relative paths from the root
         # This will result in a zip with native/{{platform}}/ folder structure for easy unzipping/merging
         mkdir -p $GITHUB_WORKSPACE/dist
@@ -37,6 +40,9 @@ runs:
         SDL_AUDIODRIVER: dummy
         SDL_VIDEODRIVER: dummy
       run: |
+        pwd
+        ls -la
+        ls -la ${{ inputs.dr-socket-path }}
         ./dragonruby ${{ inputs.dr-socket-path }} --eval app/tests/test.rb --no-tick | tee tests.log
         grep -Fq "[Game] 0 test(s) failed." tests.log
       timeout-minutes: 1 # DR will sometimes just hang
