@@ -1,9 +1,10 @@
-import platform
-import sys
-import os
-import re
 from argparse import ArgumentParser
+import os
+import platform
+import re
 from shutil import which
+import sys
+
 
 class shell_colors:
     HEADER = '\033[95m'
