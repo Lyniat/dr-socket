@@ -27,7 +27,7 @@ runs:
 
         # Move native dir to dist since upload-artifact produces a zip with relative paths from the root
         # This will result in a zip with native/{{platform}}/ folder structure for easy unzipping/merging
-        mkdir -p dist
+        mkdir -p $GITHUB_WORKSPACE/dist
         mv native $GITHUB_WORKSPACE/dist/native
       working-directory: ${{ inputs.dr-socket-path }}
       shell: bash
