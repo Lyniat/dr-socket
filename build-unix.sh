@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Make sure we exit with an error if any command fails
+set -e
+
 HAS_PYTHON=$(command -v python3 >/dev/null 2>&1 && echo "true")
 
 if [ "$HAS_PYTHON" = "true" ]; then
