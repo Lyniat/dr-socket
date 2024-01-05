@@ -39,6 +39,7 @@ runs:
       run: |
         ./dragonruby ${{ inputs.dr-socket-path }} --eval app/tests/test.rb --no-tick | tee tests.log
         grep -Fq "[Game] 0 test(s) failed." tests.log
+      timeout-minutes: 1 # DR will sometimes just hang
       shell: bash
     - uses: actions/upload-artifact@v4
       with:
