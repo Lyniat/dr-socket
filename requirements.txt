@@ -1,2 +1,0 @@
-# Needed for building
-psutil==5.9.7

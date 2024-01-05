@@ -1,7 +1,6 @@
 import platform
 import sys
 import os
-import psutil
 import re
 from argparse import ArgumentParser
 from shutil import which
