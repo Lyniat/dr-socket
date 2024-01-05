@@ -2,6 +2,10 @@ name: Compile and Test
 description: Compile and test the dr-socket extension
 
 inputs:
+  dr-socket-path:
+    type: string
+    description: Checked out path of dr-socket
+    required: true
   compile-command:
     type: string
     description: Compile command
@@ -19,8 +23,10 @@ runs:
         license_tier: pro
     - name: Compile
       run: ${{ inputs.compile-command }}
+      working-directory: ${{ inputs.dr-socket-path }}
       shell: bash
     - uses: actions/upload-artifact@v4
+      working-directory: ${{ inputs.dr-socket-path }}
       with:
         name: ${{ inputs.artifact-name }}
         path: native/

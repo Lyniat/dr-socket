@@ -12,9 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Compile and Test
-        uses: ./.github/actions/compile-and-test
         with:
+          path: ./dr-socket
+      - name: Compile and Test
+        uses: ./dr-socket/.github/actions/compile-and-test
+        with:
+          dr-socket-path: ./dr-socket
           compile-command: ./build-unix.sh --target linux
           artifact-name: linux-amd64
   compile-and-test-macos:
@@ -22,9 +25,12 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Compile and Test
-        uses: ./.github/actions/compile-and-test
         with:
+          path: ./dr-socket
+      - name: Compile and Test
+        uses: ./dr-socket/.github/actions/compile-and-test
+        with:
+          dr-socket-path: ./dr-socket
           compile-command: ./build-unix.sh --target macos --fat-binary
           artifact-name: macos
   compile-and-test-windows:
@@ -32,8 +38,11 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Compile and Test
-        uses: ./.github/actions/compile-and-test
         with:
+          path: ./dr-socket
+      - name: Compile and Test
+        uses: ./dr-socket/.github/actions/compile-and-test
+        with:
+          dr-socket-path: ./dr-socket
           compile-command: ./build-unix.sh --target windows
           artifact-name: windows-amd64
