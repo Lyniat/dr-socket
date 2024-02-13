@@ -1,10 +1,10 @@
-import platform
-import sys
-import os
-import psutil
-import re
 from argparse import ArgumentParser
+import platform
+import re
 from shutil import which
+import subprocess
+import sys
+
 
 class shell_colors:
     HEADER = '\033[95m'
@@ -184,17 +184,20 @@ for target in args.target:
         warn('Unsupported target ' + target + '. Skipping...')
         continue
 
+def exec_or_raise(command):
+    subprocess.run(command, shell=True, check=True)
+
 
 for command in build_commands:
     print(command["conf"])
     print(command["make"])
-    os.system(command["conf"])
-    os.system(command["make"])
+    exec_or_raise(command["conf"])
+    exec_or_raise(command["make"])
 
 if host_os != "macos" and args.fat_binary:
-    os.system("mkdir -p cmake-build-macos-fat-%s" % build_type)
-    os.system("lipo -create -output"
-              "cmake-build-macos-fat-%s/socket.dylib"
-              "cmake-build-macos-x86_64-%s/socket.dylib"
-              "cmake-build-macos-arm64-%s/socket.dylib" % (build_type, build_type, build_type))
-    os.system("cp cmake-build-macos-fat-%s/socket.dylib native/macos/socket.dylib" % build_type)
+    exec_or_raise("mkdir -p cmake-build-macos-fat-%s" % build_type)
+    exec_or_raise("lipo -create -output"
+                  "cmake-build-macos-fat-%s/socket.dylib"
+                  "cmake-build-macos-x86_64-%s/socket.dylib"
+                  "cmake-build-macos-arm64-%s/socket.dylib" % (build_type, build_type, build_type))
+    exec_or_raise("cp cmake-build-macos-fat-%s/socket.dylib native/macos/socket.dylib" % build_type)
