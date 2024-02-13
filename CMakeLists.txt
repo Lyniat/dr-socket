@@ -22,7 +22,9 @@ endfunction()
 cmake_minimum_required(VERSION 3.22)
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR TRUE) # check for warnings
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -Wpedantic)
+
+#fix for zpl/enet ENET_ATOMIC_CAS warning/error
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-error=switch -Wno-error=gnu-statement-expression-from-macro-expansion -Wpedantic")
 
 # avoid DOWNLOAD_EXTRACT_TIMESTAMP warning in CMake 3.24
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
@@ -86,7 +88,6 @@ endif ()
 
 include_directories(
         ${FIND_DR_COMMAND_OUT}
-        ${THIRD_PARTY_INSTALL_DIR}/enet/include
         ${THIRD_PARTY_INSTALL_DIR}/memory/include
 )
 
@@ -112,7 +113,6 @@ add_library(${THIS_PROJECT_NAME} SHARED
         )
 
 target_link_directories(${THIS_PROJECT_NAME} PRIVATE
-        ${THIRD_PARTY_INSTALL_DIR}/enet/lib
         ${THIRD_PARTY_INSTALL_DIR}/memory/lib
 )
 
@@ -120,7 +120,6 @@ if (WIN32)
 target_link_libraries(${THIS_PROJECT_NAME}
         PRIVATE
         memory
-        enet
         ws2_32
         winmm
         )
@@ -128,7 +127,6 @@ else()
 target_link_libraries(${THIS_PROJECT_NAME}
         PRIVATE
         memory
-        enet
         )
 endif()
 
@@ -215,20 +213,6 @@ endif()
 #message(FATAL_ERROR ${CMAKE_C_COMPILER})
 
 include(ExternalProject)
-ExternalProject_Add(
-        enet
-        URL https://github.com/lsalzman/enet/archive/refs/tags/v1.3.17.tar.gz
-        URL_HASH MD5=1c3270f1e03ccb2a8544a88d91d2a368
-        DOWNLOAD_DIR ${THIRD_PARTY_DOWNLOAD_DIR}/enet
-        BINARY_DIR ${THIRD_PARTY_BIN_DIR}/enet
-        SOURCE_DIR ${THIRD_PARTY_SRC_DIR}/enet
-        INSTALL_COMMAND ${PYTHON_3} "${CMAKE_CURRENT_SOURCE_DIR}/tools/scripts/install.py"
-        "${CMAKE_CURRENT_SOURCE_DIR}/tools/res/enet/"
-        "${THIRD_PARTY_BUILD_DIR}"
-        "${THIRD_PARTY_INSTALL_DIR}/enet"
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        ${EXTERNAL_EXTRA_FLAGS}
-)
 
 ExternalProject_Add(
         memory

@@ -31,7 +31,10 @@
 #include <cstdio>
 #include <algorithm>
 
-#include <enet/enet.h>
+#define ENET_IMPLEMENTATION
+#include "zpl_enet.h"
+#undef ENET_IMPLEMENTATION
+
 #include "lyniat/memory.h"
 #include "enet.h"
 #include "api.h"
@@ -213,7 +216,9 @@ bool parse_address(const char *addr_str, ENetAddress *address, const char *error
 
 uint64_t compute_peer_key(ENetPeer *peer)
 {
-    return (uint64_t)peer->address.host << 32 | peer->address.port;
+    //return (uint64_t)peer->address.host << 32 | peer->address.port; //edited by lyniat
+    // TODO: this seems to be a bad way to fix this problem
+    return *(uint64_t*)&peer->address.host << 32 | peer->address.port;
 }
 
 uint64_t get_peer_key(ENetPeer *peer) {

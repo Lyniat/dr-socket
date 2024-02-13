@@ -4,7 +4,7 @@
 
 #include "ruby.h"
 #include <map>
-#include <enet/enet.h>
+#include "zpl_enet.h"
 #include <vector>
 #include <string>
 
