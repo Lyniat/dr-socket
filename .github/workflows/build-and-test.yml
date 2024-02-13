@@ -1,0 +1,57 @@
+name: Compile and Test
+
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  compile-and-test-ubuntu:
+    name: Compile & Test (Linux)
+    runs-on: ubuntu-latest
+    # DR will sometimes just hang when the test fails.
+    # Usually setting the timeout directly on the test step would be better but since timeout-minutes is not yet
+    # supported inside composite actions (https://github.com/actions/runner/issues/1979) use job timeout as workaround
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ./dr-socket
+      - name: Compile and Test
+        uses: ./dr-socket/.github/actions/compile-and-test
+        with:
+          dr-socket-path: ./dr-socket
+          compile-command: ./build-unix.sh --target linux
+          artifact-name: linux-amd64
+
+  compile-and-test-macos:
+    name: Compile & Test (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 3 # See comment in compile-and-test-ubuntu
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ./dr-socket
+      - name: Compile and Test
+        uses: ./dr-socket/.github/actions/compile-and-test
+        with:
+          dr-socket-path: ./dr-socket
+          compile-command: ./build-unix.sh --target macos --fat-binary
+          artifact-name: macos
+
+  compile-and-test-windows:
+    name: Compile & Test (Windows)
+    timeout-minutes: 3 # See comment in compile-and-test-ubuntu
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ./dr-socket
+      - name: Compile and Test
+        uses: ./dr-socket/.github/actions/compile-and-test
+        with:
+          dr-socket-path: ./dr-socket
+          compile-command: ./build-unix.sh --target windows
+          artifact-name: windows-amd64

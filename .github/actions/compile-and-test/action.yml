@@ -1,0 +1,48 @@
+name: Compile and Test
+description: Compile and test the dr-socket extension
+
+inputs:
+  dr-socket-path:
+    type: string
+    description: Checked out path of dr-socket
+    required: true
+  compile-command:
+    type: string
+    description: Compile command
+    required: true
+  artifact-name:
+    type: string
+    description: Name of the saved artifact
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: kfischer-okarin/download-dragonruby@v1
+      with:
+        license_tier: pro
+    - name: Compile
+      run: |
+        ${{ inputs.compile-command }}
+
+        # Move native dir to dist since upload-artifact produces a zip with relative paths from the root
+        # This will result in a zip with native/{{platform}}/ folder structure for easy unzipping/merging
+        mkdir -p $GITHUB_WORKSPACE/dist
+        cp -R native $GITHUB_WORKSPACE/dist/native
+      working-directory: ${{ inputs.dr-socket-path }}
+      shell: bash
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: dist/
+    - name: Run Tests
+      env:
+        # For headless DragonRuby execution
+        SDL_AUDIODRIVER: dummy
+        SDL_VIDEODRIVER: dummy
+      run: |
+        ./dragonruby ${{ inputs.dr-socket-path }} --eval app/tests/test.rb --no-tick | tee tests.log
+        grep -Fq "[Game] 0 test(s) failed." tests.log
+      shell: bash
+      # Not yet supported: https://github.com/actions/runner/issues/1979
+      # timeout-minutes: 1
