@@ -5,15 +5,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
-    <title>raw - DragonRuby Socket Extension</title>
+    <title>Server - DragonRuby Socket Extension</title>
     <link rel="stylesheet" href="../../css/theme.css" />
     <link rel="stylesheet" href="../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
-        var mkdocs_page_name = "raw";
-        var mkdocs_page_input_path = "api/raw.md";
+        var mkdocs_page_name = "Server";
+        var mkdocs_page_input_path = "api/server.md";
         var mkdocs_page_url = null;
       </script>
     
@@ -50,9 +50,11 @@
               </ul>
               <p class="caption"><span class="caption-text">API</span></p>
               <ul class="current">
-                  <li class="toctree-l1 current"><a class="reference internal current" href="./">raw</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Server</a>
     <ul class="current">
     </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../client/">Client</a>
                   </li>
               </ul>
       </div>
@@ -70,7 +72,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
           <li class="breadcrumb-item">API</li>
-      <li class="breadcrumb-item active">raw</li>
+      <li class="breadcrumb-item active">Server</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
@@ -79,25 +81,39 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="socketraw">$socket.raw</h1>
+                <h1 id="server">Server</h1>
 <p>see <a href="https://github.com/Lyniat/dr-socket/blob/main/app/main.rb">main.rb</a> for a working example including most of the following features</p>
-<pre><code class="language-ruby">$socket.raw.host_create({address: &quot;pass.ip.address.here:port&quot;})
+<pre><code class="language-ruby">server = Server.new(6789, only_local_network?)
 </code></pre>
-<pre><code class="language-ruby">$socket.raw.host_connect({address: &quot;pass.ip.address.here:port&quot;})
+<pre><code class="language-ruby">event = server.next_event
 </code></pre>
-<pre><code class="language-ruby">$socket.raw.host_service
+<pre><code class="language-ruby">server.send(event.peer, {data: {message: &quot;ping&quot;}})
 </code></pre>
-<pre><code class="language-ruby">next_event = $socket.raw.host_service
-</code></pre>
-<pre><code class="language-ruby">$socket.raw.peer_send(peer_to_send_to, {data: {message: &quot;hello peer&quot;}})
-</code></pre>
-<pre><code class="language-ruby">$socket.raw.peer_disconnect(peer_to_disconnect)
+<pre><code class="language-ruby">def tick args
+    if args.state.tick_count == 0
+        $server = Server.new(6789, false) # Server.new(port, only_local_network?)
+    end
+
+    event = $server.next_event
+    while event
+        if event.type == :s_event_receive
+          puts(&quot;Got message: #{event.data}.&quot;)
+        elsif event.type == :s_event_connect
+          puts(&quot;connected.&quot;)
+        elsif event.type == :s_event_disconnect
+          puts(&quot;disconnected.&quot;)
+        end
+
+        event = $server.next_event
+    end
+end
 </code></pre>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../../overview/docs/" class="btn btn-neutral float-left" title="Docs"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../client/" class="btn btn-neutral float-right" title="Client">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -122,6 +138,8 @@
     
       <span><a href="../../overview/docs/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
+    
+      <span><a href="../client/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
