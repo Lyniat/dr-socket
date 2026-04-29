@@ -1,3 +1,6 @@
+# ⚠️ IMPORTANT
+This project is no longer maintained. Please use [OService](https://github.com/Lyniat/oservice) instead.
+
 # DragonRuby Socket Extension
 A DragonRuby socket library based on [ENet](https://github.com/lsalzman/enet) for developing games with realtime multiplayer.
 
